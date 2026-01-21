@@ -134,10 +134,6 @@ The system tracks comprehensive metrics:
 - **OpenAI API** - LLM for answer generation
 - **CrossEncoder** - Reranking model
 
-## 📧 Contact
-
-For questions or feedback, please open an issue on GitHub.
-
 ---
 
 **Note**: This project was developed as part of research into layout-aware document retrieval systems. The parent-child chunking strategy and verification pipeline are designed to balance retrieval precision with context preservation while minimizing hallucinations in document Q&A systems.
