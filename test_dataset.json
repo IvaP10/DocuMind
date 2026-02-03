@@ -1,0 +1,52 @@
+[
+  {
+    "query": "What is the purpose of this document?",
+    "expected_answer": "This document is the Integrated Annual Report of Reliance Industries Limited for the year 2024-25. It outlines the company's corporate overview, financial performance, strategic objectives, sustainability efforts (ESG), and future growth plans.",
+    "relevant_pages": [1, 2]
+  },
+  {
+    "query": "Who is the Chairman and Managing Director of Reliance Industries?",
+    "expected_answer": "The Chairman and Managing Director of Reliance Industries Limited is Shri Mukesh D. Ambani.",
+    "relevant_pages": [2, 4]
+  },
+  {
+    "query": "What were the total revenue and net profit of the company in FY 2024-25?",
+    "expected_answer": "For FY 2024-25, Reliance Industries reported a consolidated revenue of ₹10,71,174 crore and a net profit of ₹81,309 crore.",
+    "relevant_pages": [4, 5]
+  },
+  {
+    "query": "What are the designated 'Growth Engines' or main business segments of Reliance Industries?",
+    "expected_answer": "The company identifies its main growth engines as Retail, Digital Services, Media and Entertainment, and New Energy. It also continues to operate its traditional Oil to Chemicals (O2C) and Oil and Gas businesses.",
+    "relevant_pages": [3, 4]
+  },
+  {
+    "query": "What is the strategic objective of Reliance Retail?",
+    "expected_answer": "Reliance Retail's strategic objective is to transform the retail landscape through synergistic partnerships, innovation, and a relentless focus on customer-centricity to deliver exceptional value and a differentiated experience.",
+    "relevant_pages": [6]
+  },
+  {
+    "query": "What is the total count of retail stores operated by Reliance?",
+    "expected_answer": "Reliance Retail operates 19,340 retail stores.",
+    "relevant_pages": [6, 7]
+  },
+  {
+    "query": "What is the strategic objective of the Digital Services business?",
+    "expected_answer": "The strategic objective of Digital Services is to leverage indigenously developed technologies and partnerships to provide best-in-class products and services for customers across and beyond India.",
+    "relevant_pages": [8]
+  },
+  {
+    "query": "What is the Net Carbon Zero target for the Oil to Chemicals (O2C) business?",
+    "expected_answer": "The Oil to Chemicals (O2C) business targets to become Net Carbon Zero by 2035.",
+    "relevant_pages": [11, 18]
+  },
+  {
+    "query": "How did the Oil to Chemicals (O2C) segment perform financially in FY 2024-25?",
+    "expected_answer": "The O2C segment revenue increased by 11.0% to ₹6,26,921 crore, while EBITDA declined by 11.9% to ₹54,988 crore due to weaker fuel cracks and lower petrochemical margins.",
+    "relevant_pages": [12]
+  },
+  {
+    "query": "What are the key statistics regarding Jio's subscriber base?",
+    "expected_answer": "Jio has over 488 million subscribers in total, including 191 million 5G users. It also connects over 18 million homes.",
+    "relevant_pages": [8]
+  }
+]
