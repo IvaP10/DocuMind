@@ -1,0 +1,2677 @@
+{
+  "hybrid_full": {
+    "metrics": {
+      "avg_precision": 0.22580645161290316,
+      "avg_recall": 0.5967741935483871,
+      "avg_f1": 0.3225806451612903,
+      "avg_mrr": 0.575268817204301,
+      "avg_answer_similarity": 0.5998037320471579,
+      "avg_confidence": 0.621774193548387,
+      "verification_rate": 0.6451612903225806,
+      "avg_citation_recall": 0.6483870967741936,
+      "avg_citation_precision": 1.4838709677419355,
+      "avg_retrieval_time": 0.08640550028893255,
+      "avg_generation_time": 1.5520131049617645,
+      "avg_total_time": 1.638418605250697,
+      "avg_sources_used": 1.032258064516129
+    },
+    "detailed_results": [
+      {
+        "query": "What is the main contribution of this paper?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.9574456810951233,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 2,
+          "supported_claims": 2,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.3106250762939453,
+        "generation_time": 2.6574618816375732,
+        "total_time": 2.9680869579315186,
+        "num_sources": 2
+      },
+      {
+        "query": "What BLEU score did the Transformer achieve on WMT 2014 English-to-German translation?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.17416119575500488,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.09584593772888184,
+        "generation_time": 0.0013380050659179688,
+        "total_time": 0.0971839427947998,
+        "num_sources": 0
+      },
+      {
+        "query": "How many layers are in the encoder and decoder stacks?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8750584125518799,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.1604921817779541,
+        "generation_time": 2.420806884765625,
+        "total_time": 2.581299066543579,
+        "num_sources": 2
+      },
+      {
+        "query": "What is the model dimension (dmodel) used in the Transformer?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.31336262822151184,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.10586977005004883,
+        "generation_time": 0.00021910667419433594,
+        "total_time": 0.10608887672424316,
+        "num_sources": 0
+      },
+      {
+        "query": "Explain the scaled dot-product attention mechanism.",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.838165283203125,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 3.0,
+          "total_claims": 6,
+          "supported_claims": 6,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.05392789840698242,
+        "generation_time": 3.412729024887085,
+        "total_time": 3.4666569232940674,
+        "num_sources": 1
+      },
+      {
+        "query": "How many attention heads are used in multi-head attention?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.5136517286300659,
+        "confidence": 0.54,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "total_claims": 1,
+          "supported_claims": 0,
+          "unsupported_claims": [
+            "The context does not specify the exact number of attention heads used in multi-head attention."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.12432193756103516,
+        "generation_time": 2.0346109867095947,
+        "total_time": 2.15893292427063,
+        "num_sources": 1
+      },
+      {
+        "query": "Why is the dot product scaled by 1/sqrt(dk) in the attention mechanism?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.0,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.04588890075683594,
+        "generation_time": 0.00047016143798828125,
+        "total_time": 0.04635906219482422,
+        "num_sources": 0
+      },
+      {
+        "query": "What are the three different ways the Transformer uses multi-head attention?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.9486380815505981,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 9.0,
+          "total_claims": 7,
+          "supported_claims": 7,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.07132315635681152,
+        "generation_time": 2.9477765560150146,
+        "total_time": 3.019099712371826,
+        "num_sources": 1
+      },
+      {
+        "query": "What is the dimensionality of the feed-forward network's inner layer?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8932632803916931,
+        "confidence": 0.38,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.13802027702331543,
+        "generation_time": 1.3922269344329834,
+        "total_time": 1.5302472114562988,
+        "num_sources": 2
+      },
+      {
+        "query": "What type of positional encoding does the Transformer use?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7066800594329834,
+        "confidence": 0.8800000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.05700087547302246,
+        "generation_time": 2.326198101043701,
+        "total_time": 2.3831989765167236,
+        "num_sources": 2
+      },
+      {
+        "query": "What are the computational complexity advantages of self-attention over recurrent layers?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.8317370414733887,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.3333333333333335,
+          "total_claims": 5,
+          "supported_claims": 5,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.048024892807006836,
+        "generation_time": 2.791994094848633,
+        "total_time": 2.8400189876556396,
+        "num_sources": 2
+      },
+      {
+        "query": "How long did it take to train the base Transformer model?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.684969425201416,
+        "confidence": 0.8800000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.07518386840820312,
+        "generation_time": 1.9735102653503418,
+        "total_time": 2.048694133758545,
+        "num_sources": 2
+      },
+      {
+        "query": "What optimizer and learning rate schedule was used?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.838934600353241,
+        "confidence": 0.99,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 2,
+          "supported_claims": 2,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.1080019474029541,
+        "generation_time": 1.967984914779663,
+        "total_time": 2.075986862182617,
+        "num_sources": 1
+      },
+      {
+        "query": "What regularization techniques were employed during training?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.802086591720581,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 3.0,
+          "total_claims": 3,
+          "supported_claims": 3,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.0511019229888916,
+        "generation_time": 2.0490338802337646,
+        "total_time": 2.1001358032226562,
+        "num_sources": 1
+      },
+      {
+        "query": "What BLEU score did the Transformer achieve on English-to-French translation?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 0.3333333333333333,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.08746448159217834,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.11754012107849121,
+        "generation_time": 0.001542806625366211,
+        "total_time": 0.11908292770385742,
+        "num_sources": 0
+      },
+      {
+        "query": "How does the Transformer prevent positions from attending to subsequent positions in the decoder?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.7275957465171814,
+        "confidence": 0.99,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 2,
+          "supported_claims": 2,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.1072540283203125,
+        "generation_time": 2.0818591117858887,
+        "total_time": 2.189113140106201,
+        "num_sources": 1
+      },
+      {
+        "query": "What is the maximum path length between any two positions in a self-attention layer?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.09440866112709045,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.058508872985839844,
+        "generation_time": 0.0012669563293457031,
+        "total_time": 0.05977582931518555,
+        "num_sources": 0
+      },
+      {
+        "query": "How many sentence pairs were in the WMT 2014 English-German training dataset?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8421211242675781,
+        "confidence": 0.8800000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.05811929702758789,
+        "generation_time": 1.5218629837036133,
+        "total_time": 1.5799822807312012,
+        "num_sources": 2
+      },
+      {
+        "query": "What happens when you vary the number of attention heads according to the model variations?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8552937507629395,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 3.0,
+          "total_claims": 3,
+          "supported_claims": 3,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.061652183532714844,
+        "generation_time": 1.7796049118041992,
+        "total_time": 1.841257095336914,
+        "num_sources": 1
+      },
+      {
+        "query": "What is the formula for the position-wise feed-forward network?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7639323472976685,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 3.0,
+          "total_claims": 3,
+          "supported_claims": 3,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.08019495010375977,
+        "generation_time": 2.0770890712738037,
+        "total_time": 2.1572840213775635,
+        "num_sources": 2
+      },
+      {
+        "query": "How does model size affect performance according to the ablation studies?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.12618015706539154,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.04615497589111328,
+        "generation_time": 0.003148794174194336,
+        "total_time": 0.04930377006530762,
+        "num_sources": 0
+      },
+      {
+        "query": "What was the training cost comparison between Transformer and previous models?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7642561793327332,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 3.0,
+          "total_claims": 3,
+          "supported_claims": 3,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.0629270076751709,
+        "generation_time": 2.311837911605835,
+        "total_time": 2.374764919281006,
+        "num_sources": 1
+      },
+      {
+        "query": "What beam search parameters were used for inference?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8076295852661133,
+        "confidence": 0.8400000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.09100890159606934,
+        "generation_time": 1.4884529113769531,
+        "total_time": 1.5794618129730225,
+        "num_sources": 1
+      },
+      {
+        "query": "Why is multi-head attention beneficial compared to single attention?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.07231676578521729,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.06915807723999023,
+        "generation_time": 0.0008590221405029297,
+        "total_time": 0.07001709938049316,
+        "num_sources": 0
+      },
+      {
+        "query": "What was the effect of label smoothing on model performance?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7473223805427551,
+        "confidence": 0.8400000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.08297204971313477,
+        "generation_time": 1.4462759494781494,
+        "total_time": 1.5292479991912842,
+        "num_sources": 1
+      },
+      {
+        "query": "How does the Transformer compare to recurrent models in terms of parallelization?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.11983688920736313,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.055782318115234375,
+        "generation_time": 0.00017309188842773438,
+        "total_time": 0.05595541000366211,
+        "num_sources": 0
+      },
+      {
+        "query": "What are the key differences between the encoder and decoder architectures?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7591491937637329,
+        "confidence": 0.92,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.6,
+          "citation_precision": 1.6666666666666667,
+          "total_claims": 5,
+          "supported_claims": 3,
+          "unsupported_claims": [
+            "The key differences between the encoder and decoder architectures are as follows:\n\n1.",
+            "**Auto-regressive Nature**: The encoder processes the entire input sequence simultaneously and does not utilize previously generated outputs."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.03221487998962402,
+        "generation_time": 3.0223801136016846,
+        "total_time": 3.0545949935913086,
+        "num_sources": 2
+      },
+      {
+        "query": "What is the relationship between attention key size and model quality?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8756332397460938,
+        "confidence": 0.38,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.05368995666503906,
+        "generation_time": 1.5032789707183838,
+        "total_time": 1.5569689273834229,
+        "num_sources": 2
+      },
+      {
+        "query": "How did learned positional embeddings compare to sinusoidal encodings?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.7790349721908569,
+        "confidence": 0.8400000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.06297802925109863,
+        "generation_time": 1.8809590339660645,
+        "total_time": 1.943937063217163,
+        "num_sources": 1
+      },
+      {
+        "query": "What are the main limitations of recurrent models that the Transformer addresses?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.6371911764144897,
+        "confidence": 0.915,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.5,
+          "citation_precision": 2.0,
+          "total_claims": 8,
+          "supported_claims": 4,
+          "unsupported_claims": [
+            "The main limitations of recurrent models that the Transformer addresses include:\n\n1.",
+            "**Sequential Computation**: Recurrent models like RNNs involve sequential processing, which limits parallelization.",
+            "This limitation is counteracted by employing Multi-Head Attention (Page 2).",
+            "These points highlight how the Transformer improves upon the limitations of traditional recurrent models."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.06226396560668945,
+        "generation_time": 3.014691114425659,
+        "total_time": 3.0769550800323486,
+        "num_sources": 1
+      },
+      {
+        "query": "What configuration parameters define the big Transformer model?",
+        "mode": "hybrid_full",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.15639503300189972,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.1305222511291504,
+        "generation_time": 0.0007627010345458984,
+        "total_time": 0.1312849521636963,
+        "num_sources": 0
+      }
+    ]
+  },
+  "dense_only": {
+    "metrics": {
+      "avg_precision": 0.30645161290322587,
+      "avg_recall": 0.7258064516129032,
+      "avg_f1": 0.4182795698924731,
+      "avg_mrr": 0.6881720430107526,
+      "avg_answer_similarity": 0.6301416612921222,
+      "avg_confidence": 0.6853225806451613,
+      "verification_rate": 0.7419354838709677,
+      "avg_citation_recall": 0.6263440860215054,
+      "avg_citation_precision": 1.6451612903225807,
+      "avg_retrieval_time": 0.3163734635999126,
+      "avg_generation_time": 1.5634245180314588,
+      "avg_total_time": 1.8797979816313712,
+      "avg_sources_used": 1.0
+    },
+    "detailed_results": [
+      {
+        "query": "What is the main contribution of this paper?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.9416719675064087,
+        "confidence": 0.99,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 2,
+          "supported_claims": 2,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.43940210342407227,
+        "generation_time": 2.770394802093506,
+        "total_time": 3.209796905517578,
+        "num_sources": 1
+      },
+      {
+        "query": "What BLEU score did the Transformer achieve on WMT 2014 English-to-German translation?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 0.3333333333333333,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.17416119575500488,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.24427509307861328,
+        "generation_time": 9.489059448242188e-05,
+        "total_time": 0.2443699836730957,
+        "num_sources": 0
+      },
+      {
+        "query": "How many layers are in the encoder and decoder stacks?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8961342573165894,
+        "confidence": 0.8400000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.266726016998291,
+        "generation_time": 1.8157179355621338,
+        "total_time": 2.082443952560425,
+        "num_sources": 1
+      },
+      {
+        "query": "What is the model dimension (dmodel) used in the Transformer?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 1,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.31336262822151184,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.31180477142333984,
+        "generation_time": 0.00017309188842773438,
+        "total_time": 0.3119778633117676,
+        "num_sources": 0
+      },
+      {
+        "query": "Explain the scaled dot-product attention mechanism.",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.873354971408844,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 4.0,
+          "total_claims": 8,
+          "supported_claims": 8,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.16410088539123535,
+        "generation_time": 3.057796001434326,
+        "total_time": 3.2218968868255615,
+        "num_sources": 1
+      },
+      {
+        "query": "How many attention heads are used in multi-head attention?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8258816003799438,
+        "confidence": 0.8800000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.2548179626464844,
+        "generation_time": 1.5401051044464111,
+        "total_time": 1.7949230670928955,
+        "num_sources": 2
+      },
+      {
+        "query": "Why is the dot product scaled by 1/sqrt(dk) in the attention mechanism?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7649744153022766,
+        "confidence": 0.765,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.5,
+          "citation_precision": 1.0,
+          "total_claims": 2,
+          "supported_claims": 1,
+          "unsupported_claims": [
+            "This scaling helps maintain stable gradients during training, particularly for large values of \\( d_k \\) (Page 3)."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.20441412925720215,
+        "generation_time": 2.0385940074920654,
+        "total_time": 2.2430081367492676,
+        "num_sources": 1
+      },
+      {
+        "query": "What are the three different ways the Transformer uses multi-head attention?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.9516247510910034,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 6.0,
+          "total_claims": 4,
+          "supported_claims": 4,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.13711905479431152,
+        "generation_time": 2.857975959777832,
+        "total_time": 2.9950950145721436,
+        "num_sources": 1
+      },
+      {
+        "query": "What is the dimensionality of the feed-forward network's inner layer?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 1,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7854682207107544,
+        "confidence": 0.6900000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 0,
+          "unsupported_claims": [
+            "The provided context does not specify the dimensionality of the feed-forward network's inner layer."
+          ],
+          "hallucinated_sentences": [
+            "The provided context does not specify the dimensionality of the feed-forward network's inner layer."
+          ]
+        },
+        "retrieval_time": 2.052278757095337,
+        "generation_time": 1.2672679424285889,
+        "total_time": 3.319546699523926,
+        "num_sources": 1
+      },
+      {
+        "query": "What type of positional encoding does the Transformer use?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7744139432907104,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 2,
+          "supported_claims": 2,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.1275620460510254,
+        "generation_time": 1.9466700553894043,
+        "total_time": 2.0742321014404297,
+        "num_sources": 2
+      },
+      {
+        "query": "What are the computational complexity advantages of self-attention over recurrent layers?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.9055870771408081,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.5,
+          "total_claims": 4,
+          "supported_claims": 4,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.14710092544555664,
+        "generation_time": 2.481135845184326,
+        "total_time": 2.628236770629883,
+        "num_sources": 1
+      },
+      {
+        "query": "How long did it take to train the base Transformer model?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.6235442161560059,
+        "confidence": 0.19,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 0,
+          "unsupported_claims": [
+            "This is mentioned on page 7 in the section \"5.2 Hardware and Schedule.\""
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.21070218086242676,
+        "generation_time": 1.4679818153381348,
+        "total_time": 1.6786839962005615,
+        "num_sources": 1
+      },
+      {
+        "query": "What optimizer and learning rate schedule was used?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7425645589828491,
+        "confidence": 0.99,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 2,
+          "supported_claims": 2,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.16476082801818848,
+        "generation_time": 1.8127670288085938,
+        "total_time": 1.9775278568267822,
+        "num_sources": 1
+      },
+      {
+        "query": "What regularization techniques were employed during training?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.8299964666366577,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.75,
+          "citation_precision": 3.0,
+          "total_claims": 4,
+          "supported_claims": 3,
+          "unsupported_claims": [
+            "The regularization techniques employed during training include:\n\n1."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.24977397918701172,
+        "generation_time": 1.8994488716125488,
+        "total_time": 2.1492228507995605,
+        "num_sources": 1
+      },
+      {
+        "query": "What BLEU score did the Transformer achieve on English-to-French translation?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.7174105644226074,
+        "confidence": 0.8400000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.16663289070129395,
+        "generation_time": 1.5919721126556396,
+        "total_time": 1.7586050033569336,
+        "num_sources": 1
+      },
+      {
+        "query": "How does the Transformer prevent positions from attending to subsequent positions in the decoder?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.7147778272628784,
+        "confidence": 0.99,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 2,
+          "supported_claims": 2,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.22031903266906738,
+        "generation_time": 1.8436048030853271,
+        "total_time": 2.0639238357543945,
+        "num_sources": 1
+      },
+      {
+        "query": "What is the maximum path length between any two positions in a self-attention layer?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.09440866112709045,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.3996860980987549,
+        "generation_time": 0.00014400482177734375,
+        "total_time": 0.3998301029205322,
+        "num_sources": 0
+      },
+      {
+        "query": "How many sentence pairs were in the WMT 2014 English-German training dataset?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8421211242675781,
+        "confidence": 0.8800000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.33570408821105957,
+        "generation_time": 1.3794970512390137,
+        "total_time": 1.7152011394500732,
+        "num_sources": 2
+      },
+      {
+        "query": "What happens when you vary the number of attention heads according to the model variations?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.3333333333333333,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.6659912467002869,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 3.0,
+          "total_claims": 3,
+          "supported_claims": 3,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.3026580810546875,
+        "generation_time": 1.8128058910369873,
+        "total_time": 2.115463972091675,
+        "num_sources": 2
+      },
+      {
+        "query": "What is the formula for the position-wise feed-forward network?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.5,
+          "recall": 1.0,
+          "f1": 0.6666666666666666,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 2,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7360591292381287,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 6.0,
+          "total_claims": 3,
+          "supported_claims": 3,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 1.2040717601776123,
+        "generation_time": 2.2862510681152344,
+        "total_time": 3.4903228282928467,
+        "num_sources": 2
+      },
+      {
+        "query": "How does model size affect performance according to the ablation studies?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.12618015706539154,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.3051629066467285,
+        "generation_time": 0.00022125244140625,
+        "total_time": 0.30538415908813477,
+        "num_sources": 0
+      },
+      {
+        "query": "What was the training cost comparison between Transformer and previous models?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7620095610618591,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 3.0,
+          "total_claims": 3,
+          "supported_claims": 3,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.18208599090576172,
+        "generation_time": 2.5560998916625977,
+        "total_time": 2.7381858825683594,
+        "num_sources": 1
+      },
+      {
+        "query": "What beam search parameters were used for inference?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.6923030614852905,
+        "confidence": 0.6900000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.5,
+          "citation_precision": 0.5,
+          "total_claims": 2,
+          "supported_claims": 1,
+          "unsupported_claims": [
+            "This information can be found in the \"Machine Translation\" section on page 8."
+          ],
+          "hallucinated_sentences": [
+            "This information can be found in the \"Machine Translation\" section on page 8."
+          ]
+        },
+        "retrieval_time": 0.23465514183044434,
+        "generation_time": 1.6710960865020752,
+        "total_time": 1.9057512283325195,
+        "num_sources": 1
+      },
+      {
+        "query": "Why is multi-head attention beneficial compared to single attention?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.9258401393890381,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.24974322319030762,
+        "generation_time": 1.798576831817627,
+        "total_time": 2.0483200550079346,
+        "num_sources": 2
+      },
+      {
+        "query": "What was the effect of label smoothing on model performance?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 1,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8150110244750977,
+        "confidence": 0.8400000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.2658700942993164,
+        "generation_time": 1.5884082317352295,
+        "total_time": 1.854278326034546,
+        "num_sources": 1
+      },
+      {
+        "query": "How does the Transformer compare to recurrent models in terms of parallelization?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.11983688920736313,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.1470928192138672,
+        "generation_time": 5.412101745605469e-05,
+        "total_time": 0.14714694023132324,
+        "num_sources": 0
+      },
+      {
+        "query": "What are the key differences between the encoder and decoder architectures?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8191785216331482,
+        "confidence": 0.98,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.6666666666666666,
+          "citation_precision": 2.0,
+          "total_claims": 6,
+          "supported_claims": 4,
+          "unsupported_claims": [
+            "The key differences between the encoder and decoder architectures are as follows:\n\n1.",
+            "These differences are crucial for maintaining the causal nature of the decoder, which is essential for tasks such as sequence generation."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.15868425369262695,
+        "generation_time": 3.2742347717285156,
+        "total_time": 3.4329190254211426,
+        "num_sources": 2
+      },
+      {
+        "query": "What is the relationship between attention key size and model quality?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 1,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.5139684677124023,
+        "confidence": 0.99,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 2,
+          "supported_claims": 2,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.0905909538269043,
+        "generation_time": 2.226231813430786,
+        "total_time": 2.3168227672576904,
+        "num_sources": 1
+      },
+      {
+        "query": "How did learned positional embeddings compare to sinusoidal encodings?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 0.3333333333333333,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.16918796300888062,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.197831392288208,
+        "generation_time": 0.00021767616271972656,
+        "total_time": 0.19804906845092773,
+        "num_sources": 0
+      },
+      {
+        "query": "What are the main limitations of recurrent models that the Transformer addresses?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.3333333333333333,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.0948762595653534,
+        "confidence": 0.0,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.12283205986022949,
+        "generation_time": 5.7220458984375e-05,
+        "total_time": 0.12288928031921387,
+        "num_sources": 0
+      },
+      {
+        "query": "What configuration parameters define the big Transformer model?",
+        "mode": "dense_only",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.3224906325340271,
+        "confidence": 0.6900000000000001,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 0,
+          "unsupported_claims": [
+            "The provided context does not specify the configuration parameters that define the big Transformer model."
+          ],
+          "hallucinated_sentences": [
+            "The provided context does not specify the configuration parameters that define the big Transformer model."
+          ]
+        },
+        "retrieval_time": 0.24911785125732422,
+        "generation_time": 1.4805638790130615,
+        "total_time": 1.7296817302703857,
+        "num_sources": 1
+      }
+    ]
+  },
+  "precision_optimized": {
+    "metrics": {
+      "avg_precision": 0.22580645161290316,
+      "avg_recall": 0.5967741935483871,
+      "avg_f1": 0.3225806451612903,
+      "avg_mrr": 0.575268817204301,
+      "avg_answer_similarity": 0.7314929024827096,
+      "avg_confidence": 0.8630645161290323,
+      "verification_rate": 0.9354838709677419,
+      "avg_citation_recall": 0.7645161290322581,
+      "avg_citation_precision": 1.1720430107526882,
+      "avg_retrieval_time": 0.05053044903662897,
+      "avg_generation_time": 1.8513433317984305,
+      "avg_total_time": 1.9018737808350594,
+      "avg_sources_used": 3.0
+    },
+    "detailed_results": [
+      {
+        "query": "What is the main contribution of this paper?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.06514401733875275,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.05137300491333008,
+        "generation_time": 1.6106681823730469,
+        "total_time": 1.662041187286377,
+        "num_sources": 3
+      },
+      {
+        "query": "What BLEU score did the Transformer achieve on WMT 2014 English-to-German translation?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.9630371332168579,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.04277610778808594,
+        "generation_time": 1.9028658866882324,
+        "total_time": 1.9456419944763184,
+        "num_sources": 3
+      },
+      {
+        "query": "How many layers are in the encoder and decoder stacks?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8397516012191772,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.08405303955078125,
+        "generation_time": 1.668755054473877,
+        "total_time": 1.7528080940246582,
+        "num_sources": 3
+      },
+      {
+        "query": "What is the model dimension (dmodel) used in the Transformer?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.6886335611343384,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.061711788177490234,
+        "generation_time": 2.156222343444824,
+        "total_time": 2.2179341316223145,
+        "num_sources": 3
+      },
+      {
+        "query": "Explain the scaled dot-product attention mechanism.",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.6734930276870728,
+        "confidence": 0.62,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "total_claims": 1,
+          "supported_claims": 0,
+          "unsupported_claims": [
+            "The context does not provide a detailed explanation of the scaled dot-product attention mechanism."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.06542587280273438,
+        "generation_time": 1.6749122142791748,
+        "total_time": 1.7403380870819092,
+        "num_sources": 3
+      },
+      {
+        "query": "How many attention heads are used in multi-head attention?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.5874521732330322,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.039263010025024414,
+        "generation_time": 1.5690369606018066,
+        "total_time": 1.608299970626831,
+        "num_sources": 3
+      },
+      {
+        "query": "Why is the dot product scaled by 1/sqrt(dk) in the attention mechanism?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8806766271591187,
+        "confidence": 0.845,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.5,
+          "citation_precision": 1.0,
+          "total_claims": 2,
+          "supported_claims": 1,
+          "unsupported_claims": [
+            "This scaling is mentioned on Page 4."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.047516822814941406,
+        "generation_time": 1.6842870712280273,
+        "total_time": 1.7318038940429688,
+        "num_sources": 3
+      },
+      {
+        "query": "What are the three different ways the Transformer uses multi-head attention?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.9472256898880005,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.3333333333333335,
+          "total_claims": 2,
+          "supported_claims": 2,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.052549123764038086,
+        "generation_time": 2.531337022781372,
+        "total_time": 2.58388614654541,
+        "num_sources": 3
+      },
+      {
+        "query": "What is the dimensionality of the feed-forward network's inner layer?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.9293107986450195,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.08680295944213867,
+        "generation_time": 1.4778430461883545,
+        "total_time": 1.5646460056304932,
+        "num_sources": 3
+      },
+      {
+        "query": "What type of positional encoding does the Transformer use?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7219334244728088,
+        "confidence": 0.77,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 0,
+          "unsupported_claims": [
+            "The provided context does not specify the type of positional encoding used by the Transformer."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.06524300575256348,
+        "generation_time": 1.6266019344329834,
+        "total_time": 1.6918449401855469,
+        "num_sources": 3
+      },
+      {
+        "query": "What are the computational complexity advantages of self-attention over recurrent layers?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.8520330786705017,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.04842877388000488,
+        "generation_time": 1.8182141780853271,
+        "total_time": 1.866642951965332,
+        "num_sources": 3
+      },
+      {
+        "query": "How long did it take to train the base Transformer model?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.6664003133773804,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.053227901458740234,
+        "generation_time": 1.713353157043457,
+        "total_time": 1.7665810585021973,
+        "num_sources": 3
+      },
+      {
+        "query": "What optimizer and learning rate schedule was used?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7903050184249878,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 2,
+          "supported_claims": 2,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.04432797431945801,
+        "generation_time": 2.0963382720947266,
+        "total_time": 2.1406662464141846,
+        "num_sources": 3
+      },
+      {
+        "query": "What regularization techniques were employed during training?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.6852166056632996,
+        "confidence": 0.57,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.03546023368835449,
+        "generation_time": 2.037126064300537,
+        "total_time": 2.0725862979888916,
+        "num_sources": 3
+      },
+      {
+        "query": "What BLEU score did the Transformer achieve on English-to-French translation?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 0.3333333333333333,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.6341888904571533,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.0377347469329834,
+        "generation_time": 1.658865213394165,
+        "total_time": 1.6965999603271484,
+        "num_sources": 3
+      },
+      {
+        "query": "How does the Transformer prevent positions from attending to subsequent positions in the decoder?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.7165090441703796,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 2,
+          "supported_claims": 2,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.05616497993469238,
+        "generation_time": 1.8073279857635498,
+        "total_time": 1.8634929656982422,
+        "num_sources": 3
+      },
+      {
+        "query": "What is the maximum path length between any two positions in a self-attention layer?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.6426776051521301,
+        "confidence": 0.845,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.5,
+          "citation_precision": 1.0,
+          "total_claims": 2,
+          "supported_claims": 1,
+          "unsupported_claims": [
+            "The context discusses maximum path lengths in relation to convolutional layers, indicating that it increases to O (n/r), but does not specify this for self-attention layers."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.04381585121154785,
+        "generation_time": 1.9631381034851074,
+        "total_time": 2.0069539546966553,
+        "num_sources": 3
+      },
+      {
+        "query": "How many sentence pairs were in the WMT 2014 English-German training dataset?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8572951555252075,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.054464101791381836,
+        "generation_time": 1.4172642230987549,
+        "total_time": 1.4717283248901367,
+        "num_sources": 3
+      },
+      {
+        "query": "What happens when you vary the number of attention heads according to the model variations?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8974199891090393,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.04722785949707031,
+        "generation_time": 1.517956018447876,
+        "total_time": 1.5651838779449463,
+        "num_sources": 3
+      },
+      {
+        "query": "What is the formula for the position-wise feed-forward network?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.6666368246078491,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.06551384925842285,
+        "generation_time": 1.7909271717071533,
+        "total_time": 1.8564410209655762,
+        "num_sources": 3
+      },
+      {
+        "query": "How does model size affect performance according to the ablation studies?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.5155738592147827,
+        "confidence": 0.12,
+        "verified": false,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "total_claims": 1,
+          "supported_claims": 0,
+          "unsupported_claims": [
+            "For instance, in row (B), a reduction in the attention key size \\( d_k \\) leads to a decrease in model quality, as evidenced by an increase in perplexity (PPL) from 5.01 (with a larger \\( d_k \\)) to 6.11 (with a smaller \\( d_k \\)), suggesting that determining compatibility is complex and may benefit from a more sophisticated compatibility function than dot product (Page 10)."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.038787126541137695,
+        "generation_time": 2.127454996109009,
+        "total_time": 2.1662421226501465,
+        "num_sources": 3
+      },
+      {
+        "query": "What was the training cost comparison between Transformer and previous models?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7587203979492188,
+        "confidence": 0.8,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.2,
+          "citation_precision": 1.0,
+          "total_claims": 5,
+          "supported_claims": 1,
+          "unsupported_claims": [
+            "Specifically, the training costs (in FLOPs) for various models are provided in Table 2 (Page 6 and Page 11):\n\n- Transformer (base model): 3.3 \u00d7 10^18 for both English-to-German (EN-DE) and English-to-French (EN-FR).",
+            "- Transformer (big): 2.3 \u00d7 10^19 for both EN-DE and EN-FR.",
+            "- ConvS2S: 9.6 \u00d7 10^18 (EN-DE), 1.5 \u00d7 10^20 (EN-FR).",
+            "This indicates that the Transformer (both base and big models) has a lower training cost than several previous models, especially when looking at the base model's training cost compared to models like GNMT + RL and Deep-Att + PosUnk."
+          ],
+          "hallucinated_sentences": [
+            "- ConvS2S: 9.6 \u00d7 10^18 (EN-DE), 1.5 \u00d7 10^20 (EN-FR)."
+          ]
+        },
+        "retrieval_time": 0.04642200469970703,
+        "generation_time": 3.5649936199188232,
+        "total_time": 3.6114156246185303,
+        "num_sources": 3
+      },
+      {
+        "query": "What beam search parameters were used for inference?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.7915711998939514,
+        "confidence": 0.845,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.5,
+          "citation_precision": 1.0,
+          "total_claims": 2,
+          "supported_claims": 1,
+          "unsupported_claims": [
+            "This information can be found on Page 8 and Page 10."
+          ],
+          "hallucinated_sentences": [
+            "This information can be found on Page 8 and Page 10."
+          ]
+        },
+        "retrieval_time": 0.03650093078613281,
+        "generation_time": 1.5378220081329346,
+        "total_time": 1.5743229389190674,
+        "num_sources": 3
+      },
+      {
+        "query": "Why is multi-head attention beneficial compared to single attention?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.9351201057434082,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.05647897720336914,
+        "generation_time": 1.6480860710144043,
+        "total_time": 1.7045650482177734,
+        "num_sources": 3
+      },
+      {
+        "query": "What was the effect of label smoothing on model performance?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.6585528254508972,
+        "confidence": 0.62,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.0,
+          "citation_precision": 0.0,
+          "total_claims": 1,
+          "supported_claims": 0,
+          "unsupported_claims": [
+            "Label smoothing resulted in negative effects on perplexity, as the model became more uncertain; however, it improved accuracy and BLEU score (Page 8)."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.04657721519470215,
+        "generation_time": 1.5385308265686035,
+        "total_time": 1.5851080417633057,
+        "num_sources": 3
+      },
+      {
+        "query": "How does the Transformer compare to recurrent models in terms of parallelization?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.8110195994377136,
+        "confidence": 0.995,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.5,
+          "citation_precision": 2.0,
+          "total_claims": 2,
+          "supported_claims": 1,
+          "unsupported_claims": [
+            "This information can be found on Page 6, which discusses the computational complexity and efficiency of self-attention versus recurrent layers."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.03155517578125,
+        "generation_time": 2.2593798637390137,
+        "total_time": 2.2909350395202637,
+        "num_sources": 3
+      },
+      {
+        "query": "What are the key differences between the encoder and decoder architectures?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.6237592697143555,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.053301095962524414,
+        "generation_time": 1.515505075454712,
+        "total_time": 1.5688061714172363,
+        "num_sources": 3
+      },
+      {
+        "query": "What is the relationship between attention key size and model quality?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 0.5,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.9042111039161682,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 2,
+          "supported_claims": 2,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.047248125076293945,
+        "generation_time": 1.6232078075408936,
+        "total_time": 1.6704559326171875,
+        "num_sources": 3
+      },
+      {
+        "query": "How did learned positional embeddings compare to sinusoidal encodings?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 0.5,
+          "f1": 0.4,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 2
+        },
+        "answer_similarity": 0.7822785377502441,
+        "confidence": 1.0,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 2.0,
+          "total_claims": 2,
+          "supported_claims": 2,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.03845810890197754,
+        "generation_time": 1.8783109188079834,
+        "total_time": 1.916769027709961,
+        "num_sources": 3
+      },
+      {
+        "query": "What are the main limitations of recurrent models that the Transformer addresses?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.3333333333333333,
+          "recall": 1.0,
+          "f1": 0.5,
+          "mrr": 1.0,
+          "relevant_retrieved": 1,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.6420669555664062,
+        "confidence": 0.845,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 0.5,
+          "citation_precision": 1.0,
+          "total_claims": 2,
+          "supported_claims": 1,
+          "unsupported_claims": [
+            "The main limitations of recurrent models that the Transformer addresses include the reliance on sequence-aligned RNNs and the generation of a sequence of hidden states as a function of the previous hidden state, which can hinder computational efficiency."
+          ],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.03999805450439453,
+        "generation_time": 1.960582971572876,
+        "total_time": 2.0005810260772705,
+        "num_sources": 3
+      },
+      {
+        "query": "What configuration parameters define the big Transformer model?",
+        "mode": "precision_optimized",
+        "retrieval_metrics": {
+          "precision": 0.0,
+          "recall": 0.0,
+          "f1": 0.0,
+          "mrr": 0.0,
+          "relevant_retrieved": 0,
+          "total_retrieved": 3,
+          "total_relevant": 1
+        },
+        "answer_similarity": 0.5480655431747437,
+        "confidence": 0.9199999999999999,
+        "verified": true,
+        "citation_metrics": {
+          "citation_recall": 1.0,
+          "citation_precision": 1.0,
+          "total_claims": 1,
+          "supported_claims": 1,
+          "unsupported_claims": [],
+          "hallucinated_sentences": []
+        },
+        "retrieval_time": 0.04803609848022461,
+        "generation_time": 2.0147290229797363,
+        "total_time": 2.062765121459961,
+        "num_sources": 3
+      }
+    ]
+  }
+}

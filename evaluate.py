@@ -4,6 +4,7 @@ import json
 import time
 from typing import List, Dict, Any
 import numpy as np
+import logging
 
 from parser import parser
 from chunker import chunker
@@ -12,6 +13,8 @@ from database import vector_db
 from retriever import retriever
 from generator import generator
 import config
+
+logger = logging.getLogger(__name__)
 
 class RAGEvaluator:
     def __init__(self):
@@ -46,7 +49,7 @@ class RAGEvaluator:
                 "text": chunk.text,
                 "chunk_type": chunk.chunk_type.value,
                 "page_number": chunk.page_number,
-                "bbox": chunk.bbox.dict() if chunk.bbox else None,
+                "bbox": chunk.bbox.model_dump() if chunk.bbox else None,
                 "token_count": chunk.token_count,
                 "is_parent": chunk.parent_id is None,
                 "metadata": chunk.metadata
@@ -57,10 +60,10 @@ class RAGEvaluator:
         child_chunks = [c for c in chunks if c.parent_id is not None]
         texts = [chunk.text for chunk in child_chunks]
         print(f"  → Indexing {len(child_chunks)} child chunks...")
-        
+
         dense_embeddings = embedder.embed_texts(texts)
         sparse_vectors = embedder.create_sparse_vectors_batch(texts)
-        vector_db.index_chunks(chunks, dense_embeddings, sparse_vectors)
+        vector_db.index_chunks(child_chunks, dense_embeddings, sparse_vectors)
         print(f"  ✓ Indexed successfully")
         
         return doc_id, chunks_metadata
@@ -93,17 +96,37 @@ class RAGEvaluator:
         }
     
     def calculate_answer_similarity(self, generated: str, expected: str) -> float:
-        gen_words = set(generated.lower().split())
-        exp_words = set(expected.lower().split())
-        
-        if not gen_words or not exp_words:
+        """Calculate semantic similarity using embeddings instead of Jaccard"""
+        if not generated or not expected:
             return 0.0
         
-        intersection = len(gen_words & exp_words)
-        union = len(gen_words | exp_words)
-        
-        jaccard = intersection / union if union > 0 else 0.0
-        return jaccard
+        try:
+            # Use embedder for semantic similarity
+            from embedder import embedder
+            import numpy as np
+            
+            gen_embedding = embedder.embed_single(generated)
+            exp_embedding = embedder.embed_single(expected)
+            
+            # Cosine similarity (embeddings are already normalized)
+            similarity = float(np.dot(gen_embedding, exp_embedding))
+            
+            return max(0.0, min(1.0, similarity))
+            
+        except Exception as e:
+            logger.warning(f"Semantic similarity calculation failed: {e}")
+            # Fallback to improved word overlap
+            gen_words = set(generated.lower().split())
+            exp_words = set(expected.lower().split())
+            
+            if not gen_words or not exp_words:
+                return 0.0
+            
+            intersection = len(gen_words & exp_words)
+            union = len(gen_words | exp_words)
+            
+            jaccard = intersection / union if union > 0 else 0.0
+            return jaccard
     
     def evaluate_query(self, doc_id, chunks_metadata, query: str, ground_truth: Dict[str, Any], mode: str = "hybrid_full") -> Dict[str, Any]:
         start_time = time.time()
@@ -150,18 +173,22 @@ class RAGEvaluator:
         }
     
     def evaluate_all_modes(self, doc_id, chunks_metadata, test_data: List[Dict[str, Any]]) -> Dict[str, Any]:
-        modes = ["hybrid_full", "dense_only", "no_rerank", "no_parent"]
-        mode_results = {mode: [] for mode in modes}
+        # UPDATED: Include precision_optimized mode
+        modes = ["hybrid_full", "dense_only", "no_rerank", "no_parent", "precision_optimized"]
+        
+        # Filter modes to only those that exist in config
+        available_modes = [m for m in modes if m in config.EXPERIMENT_MODES]
+        mode_results = {mode: [] for mode in available_modes}
         
         print(f"\n{'='*100}")
-        print(f"EVALUATING {len(test_data)} QUERIES ACROSS {len(modes)} MODES")
+        print(f"EVALUATING {len(test_data)} QUERIES ACROSS {len(available_modes)} MODES")
         print(f"{'='*100}\n")
         
         for i, test_case in enumerate(test_data, 1):
             query = test_case["query"]
             print(f"[{i}/{len(test_data)}] {query[:70]}...")
             
-            for mode in modes:
+            for mode in available_modes:
                 mode_name = config.EXPERIMENT_MODES[mode]["name"]
                 print(f"  → Testing: {mode_name}")
                 
@@ -174,9 +201,10 @@ class RAGEvaluator:
                 )
                 mode_results[mode].append(result)
                 
-                print(f"    F1: {result['retrieval_metrics']['f1']:.3f} | " +
-                      f"Sim: {result['answer_similarity']:.3f} | " +
-                      f"Time: {result['total_time']:.2f}s")
+                print(f"    P: {result['retrieval_metrics']['precision']:.3f} | " +
+                      f"R: {result['retrieval_metrics']['recall']:.3f} | " +
+                      f"F1: {result['retrieval_metrics']['f1']:.3f} | " +
+                      f"Sim: {result['answer_similarity']:.3f}")
             print()
         
         return mode_results
@@ -217,9 +245,9 @@ class RAGEvaluator:
             print(f"{'─'*100}")
             
             print("\nRETRIEVAL METRICS:")
-            print(f"  Precision:        {metrics['avg_precision']:.4f}")
-            print(f"  Recall:           {metrics['avg_recall']:.4f}")
-            print(f"  F1 Score:         {metrics['avg_f1']:.4f}")
+            print(f"  Precision:        {metrics['avg_precision']:.4f} ({metrics['avg_precision']:.1%})")
+            print(f"  Recall:           {metrics['avg_recall']:.4f} ({metrics['avg_recall']:.1%})")
+            print(f"  F1 Score:         {metrics['avg_f1']:.4f} ({metrics['avg_f1']:.1%})")
             print(f"  MRR:              {metrics['avg_mrr']:.4f}")
             
             print("\nGENERATION METRICS:")
@@ -235,11 +263,14 @@ class RAGEvaluator:
             print(f"  Total Time:        {metrics['avg_total_time']:.3f}s")
             print(f"  Avg Sources:       {metrics['avg_sources_used']:.2f}")
         
+        # NEW: Precision comparison table
+        self.print_precision_comparison(mode_results)
+        
         print("\n" + "="*100)
         print("MODE COMPARISON (Best Values)")
         print("="*100 + "\n")
         
-        comparison_metrics = ["avg_f1", "avg_answer_similarity", "avg_confidence", "avg_total_time"]
+        comparison_metrics = ["avg_precision", "avg_recall", "avg_f1", "avg_answer_similarity", "avg_total_time"]
         
         for metric in comparison_metrics:
             print(f"\n{metric.upper().replace('_', ' ')}:")
@@ -258,9 +289,53 @@ class RAGEvaluator:
                 if "time" in metric:
                     print(f"  {rank}. {mode_name:40} {value:.3f}s")
                 else:
-                    print(f"  {rank}. {mode_name:40} {value:.4f}")
+                    print(f"  {rank}. {mode_name:40} {value:.4f} ({value:.1%})")
         
         print("\n" + "="*100 + "\n")
+    
+    def print_precision_comparison(self, mode_results: Dict[str, List[Dict[str, Any]]]):
+        """NEW: Print detailed precision comparison"""
+        print("\n" + "="*100)
+        print("PRECISION IMPROVEMENT ANALYSIS")
+        print("="*100 + "\n")
+        
+        # Get baseline (hybrid_full)
+        if "hybrid_full" in mode_results:
+            baseline_metrics = self.aggregate_metrics(mode_results["hybrid_full"])
+            baseline_precision = baseline_metrics["avg_precision"]
+            baseline_recall = baseline_metrics["avg_recall"]
+            baseline_f1 = baseline_metrics["avg_f1"]
+            
+            print("BASELINE (hybrid_full):")
+            print(f"  Precision: {baseline_precision:.1%}")
+            print(f"  Recall:    {baseline_recall:.1%}")
+            print(f"  F1 Score:  {baseline_f1:.1%}")
+            print()
+            
+            # Compare other modes
+            for mode, results in mode_results.items():
+                if mode == "hybrid_full":
+                    continue
+                
+                metrics = self.aggregate_metrics(results)
+                mode_name = config.EXPERIMENT_MODES[mode]["name"]
+                
+                precision_delta = metrics["avg_precision"] - baseline_precision
+                recall_delta = metrics["avg_recall"] - baseline_recall
+                f1_delta = metrics["avg_f1"] - baseline_f1
+                
+                print(f"{mode_name}:")
+                print(f"  Precision: {metrics['avg_precision']:.1%} ({precision_delta:+.1%})")
+                print(f"  Recall:    {metrics['avg_recall']:.1%} ({recall_delta:+.1%})")
+                print(f"  F1 Score:  {metrics['avg_f1']:.1%} ({f1_delta:+.1%})")
+                
+                # Highlight if precision improved significantly
+                if precision_delta > 0.10:
+                    print(f"  ✓ SIGNIFICANT PRECISION IMPROVEMENT!")
+                elif precision_delta > 0.05:
+                    print(f"  ✓ Moderate precision improvement")
+                
+                print()
     
     def save_results(self, mode_results: Dict[str, List[Dict[str, Any]]], output_path: str):
         aggregated = {}
@@ -276,11 +351,12 @@ class RAGEvaluator:
         print(f"✓ Results saved to {output_path}")
     
     def generate_resume_metrics(self, mode_results: Dict[str, List[Dict[str, Any]]]) -> Dict[str, Any]:
-        best_mode = "hybrid_full"
+        # NEW: Use precision_optimized if available, otherwise hybrid_full
+        best_mode = "precision_optimized" if "precision_optimized" in mode_results else "hybrid_full"
         best_metrics = self.aggregate_metrics(mode_results[best_mode])
         
         resume_metrics = {
-            "model_architecture": "Hybrid RAG with Parent-Child Chunking",
+            "model_architecture": f"Hybrid RAG with Parent-Child Chunking ({best_mode} mode)",
             "retrieval_performance": {
                 "precision": f"{best_metrics['avg_precision']:.2%}",
                 "recall": f"{best_metrics['avg_recall']:.2%}",
@@ -301,8 +377,10 @@ class RAGEvaluator:
             "key_achievements": [
                 f"Achieved {best_metrics['avg_f1']:.1%} F1 score in document retrieval",
                 f"Maintained {best_metrics['verification_rate']:.1%} answer verification rate",
-                f"Average query response time: {best_metrics['avg_total_time']:.2f}s"
-            ]
+                f"Average query response time: {best_metrics['avg_total_time']:.2f}s",
+                f"Precision: {best_metrics['avg_precision']:.1%}"
+            ],
+            "optimization_mode": best_mode
         }
         
         return resume_metrics
@@ -317,11 +395,11 @@ def main():
     test_data_path = input("Enter test dataset JSON path: ").strip()
     
     if not Path(pdf_path).exists():
-        print("❌ PDF file not found")
+        print("✗ PDF file not found")
         return
     
     if not Path(test_data_path).exists():
-        print("❌ Test dataset not found")
+        print("✗ Test dataset not found")
         return
     
     evaluator = RAGEvaluator()

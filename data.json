@@ -1,0 +1,219 @@
+[
+  {
+    "query": "What is the main contribution of this paper?",
+    "expected_answer": "The paper proposes the Transformer, a novel network architecture based solely on attention mechanisms, dispensing with recurrence and convolutions entirely. It achieves state-of-the-art results on machine translation tasks while being more parallelizable and requiring less training time.",
+    "relevant_pages": [1],
+    "difficulty": "easy",
+    "category": "architecture"
+  },
+  {
+    "query": "What BLEU score did the Transformer achieve on WMT 2014 English-to-German translation?",
+    "expected_answer": "The Transformer achieved a BLEU score of 28.4 on the WMT 2014 English-to-German translation task, improving over existing best results by over 2 BLEU.",
+    "relevant_pages": [1, 8],
+    "difficulty": "easy",
+    "category": "results"
+  },
+  {
+    "query": "How many layers are in the encoder and decoder stacks?",
+    "expected_answer": "Both the encoder and decoder are composed of a stack of N = 6 identical layers.",
+    "relevant_pages": [3],
+    "difficulty": "easy",
+    "category": "architecture"
+  },
+  {
+    "query": "What is the model dimension (dmodel) used in the Transformer?",
+    "expected_answer": "The model dimension dmodel is 512. All sub-layers in the model, as well as the embedding layers, produce outputs of dimension 512.",
+    "relevant_pages": [3],
+    "difficulty": "easy",
+    "category": "hyperparameters"
+  },
+  {
+    "query": "Explain the scaled dot-product attention mechanism.",
+    "expected_answer": "Scaled dot-product attention computes the dot products of the query with all keys, divides each by the square root of dk, and applies a softmax function to obtain the weights on the values. The formula is: Attention(Q, K, V) = softmax(QK^T / sqrt(dk))V. The scaling factor 1/sqrt(dk) prevents the dot products from growing too large.",
+    "relevant_pages": [4],
+    "difficulty": "medium",
+    "category": "attention"
+  },
+  {
+    "query": "How many attention heads are used in multi-head attention?",
+    "expected_answer": "The paper employs h = 8 parallel attention layers or heads. For each head, dk = dv = dmodel/h = 64.",
+    "relevant_pages": [5],
+    "difficulty": "easy",
+    "category": "attention"
+  },
+  {
+    "query": "Why is the dot product scaled by 1/sqrt(dk) in the attention mechanism?",
+    "expected_answer": "For large values of dk, the dot products grow large in magnitude, pushing the softmax function into regions where it has extremely small gradients. Scaling by 1/sqrt(dk) counteracts this effect.",
+    "relevant_pages": [4],
+    "difficulty": "medium",
+    "category": "attention"
+  },
+  {
+    "query": "What are the three different ways the Transformer uses multi-head attention?",
+    "expected_answer": "The Transformer uses multi-head attention in three ways: (1) encoder-decoder attention layers where queries come from the previous decoder layer and keys/values from the encoder output, (2) self-attention layers in the encoder where all keys, values, and queries come from the previous encoder layer, and (3) self-attention layers in the decoder where each position attends to all positions up to and including that position.",
+    "relevant_pages": [5],
+    "difficulty": "hard",
+    "category": "attention"
+  },
+  {
+    "query": "What is the dimensionality of the feed-forward network's inner layer?",
+    "expected_answer": "The dimensionality of the feed-forward network's inner layer is dff = 2048, while the input and output dimensionality is dmodel = 512.",
+    "relevant_pages": [5],
+    "difficulty": "easy",
+    "category": "architecture"
+  },
+  {
+    "query": "What type of positional encoding does the Transformer use?",
+    "expected_answer": "The Transformer uses sinusoidal positional encodings with sine and cosine functions of different frequencies: PE(pos,2i) = sin(pos/10000^(2i/dmodel)) and PE(pos,2i+1) = cos(pos/10000^(2i/dmodel)). This was chosen because it may allow the model to extrapolate to sequence lengths longer than those encountered during training.",
+    "relevant_pages": [6],
+    "difficulty": "medium",
+    "category": "architecture"
+  },
+  {
+    "query": "What are the computational complexity advantages of self-attention over recurrent layers?",
+    "expected_answer": "Self-attention layers connect all positions with O(1) sequential operations, whereas recurrent layers require O(n) sequential operations. Self-attention layers are faster than recurrent layers when the sequence length n is smaller than the representation dimensionality d, which is most often the case.",
+    "relevant_pages": [6, 7],
+    "difficulty": "hard",
+    "category": "complexity"
+  },
+  {
+    "query": "How long did it take to train the base Transformer model?",
+    "expected_answer": "The base model was trained for a total of 100,000 steps or 12 hours on one machine with 8 NVIDIA P100 GPUs. Each training step took about 0.4 seconds.",
+    "relevant_pages": [7],
+    "difficulty": "easy",
+    "category": "training"
+  },
+  {
+    "query": "What optimizer and learning rate schedule was used?",
+    "expected_answer": "The Adam optimizer was used with β1 = 0.9, β2 = 0.98 and ε = 10^-9. The learning rate was varied according to: lrate = dmodel^-0.5 * min(step_num^-0.5, step_num * warmup_steps^-1.5), with warmup_steps = 4000.",
+    "relevant_pages": [7],
+    "difficulty": "medium",
+    "category": "training"
+  },
+  {
+    "query": "What regularization techniques were employed during training?",
+    "expected_answer": "Three types of regularization were used: (1) Residual Dropout applied to the output of each sub-layer and to the sums of embeddings and positional encodings with Pdrop = 0.1 for the base model, (2) Label smoothing with value εls = 0.1.",
+    "relevant_pages": [7, 8],
+    "difficulty": "medium",
+    "category": "training"
+  },
+  {
+    "query": "What BLEU score did the Transformer achieve on English-to-French translation?",
+    "expected_answer": "The big Transformer model achieved a BLEU score of 41.0 on the WMT 2014 English-to-French translation task after training for 3.5 days on eight GPUs, establishing a new single-model state-of-the-art.",
+    "relevant_pages": [1, 8],
+    "difficulty": "easy",
+    "category": "results"
+  },
+  {
+    "query": "How does the Transformer prevent positions from attending to subsequent positions in the decoder?",
+    "expected_answer": "The self-attention sub-layer in the decoder stack is modified to prevent positions from attending to subsequent positions. This is implemented inside scaled dot-product attention by masking out (setting to -∞) all values in the input of the softmax which correspond to illegal connections.",
+    "relevant_pages": [3, 5],
+    "difficulty": "medium",
+    "category": "architecture"
+  },
+  {
+    "query": "What is the maximum path length between any two positions in a self-attention layer?",
+    "expected_answer": "A self-attention layer connects all positions with a constant number of sequentially executed operations, resulting in a maximum path length of O(1).",
+    "relevant_pages": [6],
+    "difficulty": "medium",
+    "category": "complexity"
+  },
+  {
+    "query": "How many sentence pairs were in the WMT 2014 English-German training dataset?",
+    "expected_answer": "The WMT 2014 English-German dataset consisted of about 4.5 million sentence pairs. Sentences were encoded using byte-pair encoding with a shared source-target vocabulary of about 37000 tokens.",
+    "relevant_pages": [7],
+    "difficulty": "easy",
+    "category": "training"
+  },
+  {
+    "query": "What happens when you vary the number of attention heads according to the model variations?",
+    "expected_answer": "According to Table 3 row (A), single-head attention is 0.9 BLEU worse than the best setting (8 heads). Quality also drops off with too many heads - using 32 heads with dk=16 and dv=16 resulted in 25.4 BLEU compared to 25.8 with 8 heads.",
+    "relevant_pages": [9],
+    "difficulty": "hard",
+    "category": "ablation"
+  },
+  {
+    "query": "What is the formula for the position-wise feed-forward network?",
+    "expected_answer": "The feed-forward network applies two linear transformations with a ReLU activation in between: FFN(x) = max(0, xW1 + b1)W2 + b2.",
+    "relevant_pages": [5],
+    "difficulty": "medium",
+    "category": "architecture"
+  },
+  {
+    "query": "How does model size affect performance according to the ablation studies?",
+    "expected_answer": "According to Table 3 rows (C), bigger models perform better. Reducing the model to 2 layers resulted in 23.7 BLEU, while increasing to 8 layers or using dmodel=1024 with dff=4096 improved performance to 26.0-26.2 BLEU compared to 25.8 for the base model.",
+    "relevant_pages": [9],
+    "difficulty": "hard",
+    "category": "ablation"
+  },
+  {
+    "query": "What was the training cost comparison between Transformer and previous models?",
+    "expected_answer": "The Transformer base model required 3.3×10^18 FLOPs for English-to-German translation, while the big model required 2.3×10^19 FLOPs. This is significantly less than previous models like GNMT+RL (2.3×10^19) and ConvS2S (9.6×10^18), while achieving better BLEU scores.",
+    "relevant_pages": [8],
+    "difficulty": "hard",
+    "category": "results"
+  },
+  {
+    "query": "What beam search parameters were used for inference?",
+    "expected_answer": "Beam search was used with a beam size of 4 and length penalty α = 0.6. The maximum output length during inference was set to input length + 50, with early termination when possible.",
+    "relevant_pages": [8],
+    "difficulty": "medium",
+    "category": "inference"
+  },
+  {
+    "query": "Why is multi-head attention beneficial compared to single attention?",
+    "expected_answer": "Multi-head attention allows the model to jointly attend to information from different representation subspaces at different positions. With a single attention head, averaging inhibits this ability.",
+    "relevant_pages": [4, 5],
+    "difficulty": "medium",
+    "category": "attention"
+  },
+  {
+    "query": "What was the effect of label smoothing on model performance?",
+    "expected_answer": "Label smoothing of value εls = 0.1 was employed during training. While it hurts perplexity as the model learns to be more unsure, it improves accuracy and BLEU score.",
+    "relevant_pages": [8],
+    "difficulty": "medium",
+    "category": "training"
+  },
+  {
+    "query": "How does the Transformer compare to recurrent models in terms of parallelization?",
+    "expected_answer": "The Transformer allows for significantly more parallelization compared to recurrent models. Recurrent models have inherently sequential computation that precludes parallelization within training examples, which becomes critical at longer sequence lengths. The Transformer eliminates this sequential dependency.",
+    "relevant_pages": [2],
+    "difficulty": "medium",
+    "category": "advantages"
+  },
+  {
+    "query": "What are the key differences between the encoder and decoder architectures?",
+    "expected_answer": "Both encoder and decoder have N=6 identical layers with self-attention and feed-forward sub-layers. The decoder additionally has a third sub-layer that performs multi-head attention over the encoder output. The decoder's self-attention is also masked to prevent attending to subsequent positions, ensuring predictions for position i depend only on known outputs at positions less than i.",
+    "relevant_pages": [3],
+    "difficulty": "hard",
+    "category": "architecture"
+  },
+  {
+    "query": "What is the relationship between attention key size and model quality?",
+    "expected_answer": "According to Table 3 row (B), reducing the attention key size dk hurts model quality. This suggests that determining compatibility is not easy and that a more sophisticated compatibility function than dot product may be beneficial.",
+    "relevant_pages": [9],
+    "difficulty": "hard",
+    "category": "ablation"
+  },
+  {
+    "query": "How did learned positional embeddings compare to sinusoidal encodings?",
+    "expected_answer": "According to Table 3 row (E), experiments with learned positional embeddings instead of sinusoidal encodings produced nearly identical results to the base model (both achieving 25.7 BLEU).",
+    "relevant_pages": [6, 9],
+    "difficulty": "medium",
+    "category": "ablation"
+  },
+  {
+    "query": "What are the main limitations of recurrent models that the Transformer addresses?",
+    "expected_answer": "Recurrent models factor computation sequentially along symbol positions, generating hidden states as a function of the previous state. This sequential nature precludes parallelization within training examples and becomes critical at longer sequence lengths due to memory constraints. The fundamental constraint of sequential computation remains even with recent improvements.",
+    "relevant_pages": [2],
+    "difficulty": "hard",
+    "category": "motivation"
+  },
+  {
+    "query": "What configuration parameters define the big Transformer model?",
+    "expected_answer": "The big model uses N=6 layers, dmodel=1024, dff=4096, h=16 attention heads, with Pdrop=0.3. It was trained for 300,000 steps (3.5 days) and achieved 26.4 BLEU on the development set.",
+    "relevant_pages": [9],
+    "difficulty": "medium",
+    "category": "hyperparameters"
+  }
+]

@@ -1,0 +1,27 @@
+{
+  "model_architecture": "Hybrid RAG with Parent-Child Chunking (precision_optimized mode)",
+  "retrieval_performance": {
+    "precision": "22.58%",
+    "recall": "59.68%",
+    "f1_score": "32.26%",
+    "mrr": "0.5753"
+  },
+  "generation_quality": {
+    "answer_accuracy": "73.15%",
+    "confidence_score": "86.31%",
+    "verification_rate": "93.55%",
+    "citation_recall": "76.45%"
+  },
+  "system_performance": {
+    "avg_query_time": "1.90s",
+    "retrieval_latency": "0.05s",
+    "generation_latency": "1.85s"
+  },
+  "key_achievements": [
+    "Achieved 32.3% F1 score in document retrieval",
+    "Maintained 93.5% answer verification rate",
+    "Average query response time: 1.90s",
+    "Precision: 22.6%"
+  ],
+  "optimization_mode": "precision_optimized"
+}

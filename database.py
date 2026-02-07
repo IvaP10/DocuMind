@@ -125,72 +125,108 @@ class VectorDatabase:
         logger.info(f"Searching for top {top_k} chunks")
         
         try:
+            query_filter = Filter(
+                must=[
+                    FieldCondition(
+                        key="document_id",
+                        match=MatchValue(value=str(document_id))
+                    )
+                ]
+            )
+            
             if use_dense and use_sparse:
-                results = self.client.search(
+                # Hybrid search using Reciprocal Rank Fusion
+                logger.info("Using hybrid search (dense + sparse)")
+                
+                # Dense search
+                dense_results = self.client.query_points(
                     collection_name=self.collection_name,
-                    query_vector=NamedVector(
-                        name="dense",
-                        vector=dense_embedding.tolist()
+                    query=dense_embedding.tolist(),
+                    using="dense",
+                    query_filter=query_filter,
+                    limit=top_k * 2,
+                    with_payload=True
+                ).points
+                
+                # Sparse search
+                sparse_results = self.client.query_points(
+                    collection_name=self.collection_name,
+                    query=SparseVector(
+                        indices=list(sparse_vector.keys()),
+                        values=list(sparse_vector.values())
                     ),
-                    query_filter=Filter(
-                        must=[
-                            FieldCondition(
-                                key="document_id",
-                                match=MatchValue(value=str(document_id))
-                            )
-                        ]
-                    ),
-                    limit=top_k,
-                    with_payload=True,
-                    with_vectors=False
-                )
+                    using="sparse",
+                    query_filter=query_filter,
+                    limit=top_k * 2,
+                    with_payload=True
+                ).points
+                
+                # Reciprocal Rank Fusion
+                results = self._reciprocal_rank_fusion(dense_results, sparse_results, top_k)
+                
             elif use_dense:
-                results = self.client.search(
+                logger.info("Using dense-only search")
+                results = self.client.query_points(
                     collection_name=self.collection_name,
-                    query_vector=NamedVector(
-                        name="dense",
-                        vector=dense_embedding.tolist()
-                    ),
-                    query_filter=Filter(
-                        must=[
-                            FieldCondition(
-                                key="document_id",
-                                match=MatchValue(value=str(document_id))
-                            )
-                        ]
-                    ),
+                    query=dense_embedding.tolist(),
+                    using="dense",
+                    query_filter=query_filter,
                     limit=top_k,
-                    with_payload=True,
-                    with_vectors=False
-                )
+                    with_payload=True
+                ).points
+            
+            elif use_sparse:
+                logger.info("Using sparse-only search")
+                results = self.client.query_points(
+                    collection_name=self.collection_name,
+                    query=SparseVector(
+                        indices=list(sparse_vector.keys()),
+                        values=list(sparse_vector.values())
+                    ),
+                    using="sparse",
+                    query_filter=query_filter,
+                    limit=top_k,
+                    with_payload=True
+                ).points
             else:
-                results = self.client.search(
-                    collection_name=self.collection_name,
-                    query_vector=NamedVector(
-                        name="sparse",
-                        vector=SparseVector(
-                            indices=list(sparse_vector.keys()),
-                            values=list(sparse_vector.values())
-                        )
-                    ),
-                    query_filter=Filter(
-                        must=[
-                            FieldCondition(
-                                key="document_id",
-                                match=MatchValue(value=str(document_id))
-                            )
-                        ]
-                    ),
-                    limit=top_k,
-                    with_payload=True,
-                    with_vectors=False
-                )
+                logger.warning("Both dense and sparse disabled, returning empty results")
+                return []
             
             return self.format_results(results)
             
         except Exception as e:
             logger.error(f"Search error: {str(e)}")
             raise
+    
+    def _reciprocal_rank_fusion(self, dense_results, sparse_results, top_k: int, k: int = 60):
+        """Combine dense and sparse results using Reciprocal Rank Fusion"""
+        scores = {}
+        
+        # Score dense results
+        for rank, point in enumerate(dense_results, start=1):
+            point_id = point.id
+            scores[point_id] = scores.get(point_id, 0) + 1 / (k + rank)
+        
+        # Score sparse results
+        for rank, point in enumerate(sparse_results, start=1):
+            point_id = point.id
+            scores[point_id] = scores.get(point_id, 0) + 1 / (k + rank)
+        
+        # Combine all unique points
+        all_points = {p.id: p for p in dense_results}
+        all_points.update({p.id: p for p in sparse_results})
+        
+        # Sort by RRF score
+        ranked_ids = sorted(scores.keys(), key=lambda x: scores[x], reverse=True)[:top_k]
+        
+        # Return points in ranked order with RRF scores
+        ranked_points = []
+        for point_id in ranked_ids:
+            point = all_points[point_id]
+            point.score = scores[point_id]  # Replace original score with RRF score
+            ranked_points.append(point)
+        
+        return ranked_points
     
     def format_results(self, results) -> List[Dict[str, Any]]:
         search_results = []

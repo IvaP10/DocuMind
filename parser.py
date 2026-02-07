@@ -1,10 +1,10 @@
+import logging
 from typing import List, Optional, Dict, Any
 from docling.document_converter import DocumentConverter
+from docling_core.types.doc.labels import DocItemLabel
 from models import ChunkType, FormatType, BoundingBox
-import logging
 
 logger = logging.getLogger(__name__)
-
 
 class LayoutElement:
     def __init__(
@@ -23,7 +23,6 @@ class LayoutElement:
         self.format_type = format_type
         self.metadata = metadata or {}
 
-
 class PDFParser:
     
     def __init__(self):
@@ -35,31 +34,44 @@ class PDFParser:
         try:
             result = self.docling_converter.convert(pdf_path)
             elements = []
-            total_pages = len(result.document.pages)
+            doc = result.document
             
-            for page in result.document.pages:
-                page_num = page.page_no
+            total_pages = 0
+            if hasattr(doc, 'pages') and isinstance(doc.pages, dict):
+                total_pages = len(doc.pages)
+            elif hasattr(doc, 'pages') and isinstance(doc.pages, list):
+                total_pages = len(doc.pages)
+            
+            for item, _ in doc.iterate_items():
+                text_content = ""
+                element_type = ChunkType.TEXT
+                format_type = FormatType.PLAIN
                 
-                for text_block in page.text:
-                    element = LayoutElement(
-                        content=text_block.text,
-                        element_type=ChunkType.TEXT,
-                        page=page_num,
-                        bbox=self._extract_bbox(text_block),
-                        format_type=FormatType.PLAIN
-                    )
-                    elements.append(element)
+                if item.label == DocItemLabel.TABLE:
+                    element_type = ChunkType.TABLE
+                    format_type = FormatType.MARKDOWN
+                    if hasattr(doc, "export_to_markdown"):
+                        text_content = doc.export_to_markdown(item)
+                    else:
+                        text_content = item.text
+                elif hasattr(item, 'text') and item.text.strip():
+                    text_content = item.text
                 
-                for table in page.tables:
-                    table_content = self._format_table(table)
-                    element = LayoutElement(
-                        content=table_content,
-                        element_type=ChunkType.TABLE,
-                        page=page_num,
-                        bbox=self._extract_bbox(table),
-                        format_type=self._determine_table_format(table)
-                    )
-                    elements.append(element)
+                if not text_content:
+                    continue
+                    
+                page_num = 1
+                if hasattr(item, 'prov') and item.prov:
+                    page_num = item.prov[0].page_no
+                
+                element = LayoutElement(
+                    content=text_content,
+                    element_type=element_type,
+                    page=page_num,
+                    bbox=self._extract_bbox(item),
+                    format_type=format_type
+                )
+                elements.append(element)
             
             logger.info(f"Parsed {total_pages} pages, {len(elements)} elements")
             return total_pages, elements
@@ -68,77 +80,18 @@ class PDFParser:
             logger.error(f"Parse error: {str(e)}")
             raise
     
-    def _extract_bbox(self, element) -> Optional[BoundingBox]:
+    def _extract_bbox(self, item) -> Optional[BoundingBox]:
         try:
-            if hasattr(element, 'bbox'):
-                bbox = element.bbox
+            if hasattr(item, 'prov') and item.prov:
+                bbox = item.prov[0].bbox
                 return BoundingBox(
                     x=bbox.l,
                     y=bbox.t,
                     width=bbox.r - bbox.l,
                     height=bbox.b - bbox.t
                 )
-        except:
+        except Exception:
             pass
         return None
-    
-    def _format_table(self, table) -> str:
-        try:
-            if self._has_merged_cells(table):
-                return self._table_to_html(table)
-            else:
-                return self._table_to_markdown(table)
-        except:
-            return str(table)
-    
-    def _determine_table_format(self, table) -> FormatType:
-        if self._has_merged_cells(table):
-            return FormatType.HTML
-        return FormatType.MARKDOWN
-    
-    def _has_merged_cells(self, table) -> bool:
-        try:
-            if hasattr(table, 'cells'):
-                for cell in table.cells:
-                    if hasattr(cell, 'rowspan') and cell.rowspan > 1:
-                        return True
-                    if hasattr(cell, 'colspan') and cell.colspan > 1:
-                        return True
-        except:
-            pass
-        return False
-    
-    def _table_to_markdown(self, table) -> str:
-        try:
-            rows = []
-            if hasattr(table, 'data'):
-                for row in table.data:
-                    rows.append("| " + " | ".join(str(cell) for cell in row) + " |")
-                
-                if rows:
-                    header_sep = "| " + " | ".join("---" for _ in table.data[0]) + " |"
-                    rows.insert(1, header_sep)
-                    
-            return "\n".join(rows)
-        except:
-            return str(table)
-    
-    def _table_to_html(self, table) -> str:
-        try:
-            html = ["<table>"]
-            
-            if hasattr(table, 'data'):
-                for i, row in enumerate(table.data):
-                    html.append("<tr>")
-                    tag = "th" if i == 0 else "td"
-                    for cell in row:
-                        html.append(f"<{tag}>{cell}</{tag}>")
-                    html.append("</tr>")
-                    
-            html.append("</table>")
-            return "".join(html)
-        except:
-            return str(table)
-
 
 parser = PDFParser()

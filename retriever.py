@@ -9,7 +9,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class Retriever:
+class ImprovedRetriever:
     
     def __init__(self):
         logger.info(f"Loading reranker: {config.RERANKER_MODEL}")
@@ -29,6 +29,7 @@ class Retriever:
         logger.info(f"Retrieving context: '{query[:50]}...'")
         logger.info(f"Mode: {experiment['name']}")
         
+        # Step 1: Initial search
         candidates = self.search(
             document_id, 
             query,
@@ -45,17 +46,40 @@ class Retriever:
                 "rerank_scores": []
             }
         
+        # Step 2: Apply score threshold if enabled
+        if experiment.get("apply_score_threshold", False):
+            candidates = self.filter_by_score(candidates, config.DENSE_SCORE_THRESHOLD)
+            logger.info(f"After score filtering: {len(candidates)} candidates")
+        
+        # Step 3: Reranking
         if experiment["use_reranker"]:
             top_chunks, rerank_scores = self.rerank(query, candidates)
+            
+            # Filter by rerank threshold
+            if experiment.get("apply_score_threshold", False):
+                filtered_chunks = []
+                filtered_scores = []
+                for chunk, score in zip(top_chunks, rerank_scores):
+                    if score >= config.RERANK_SCORE_THRESHOLD:
+                        filtered_chunks.append(chunk)
+                        filtered_scores.append(score)
+                
+                if filtered_chunks:
+                    top_chunks = filtered_chunks
+                    rerank_scores = filtered_scores
+                    logger.info(f"After rerank filtering: {len(top_chunks)} chunks")
         else:
             top_chunks = candidates[:config.TOP_K_RERANK]
-            rerank_scores = [0.0] * len(top_chunks)
+            rerank_scores = [c.get("score", 0.0) for c in top_chunks]
         
+        # Step 4: Parent-child or keep children
         if experiment["use_parent_child"]:
             context_chunks = self.get_parent_chunks(top_chunks, chunks_metadata)
         else:
+            # Keep the precise child chunks that matched
             context_chunks = top_chunks
         
+        # Step 5: Assemble context
         context_data = self.assemble_context(context_chunks)
         context_data["retrieved_chunks"] = top_chunks
         context_data["rerank_scores"] = rerank_scores
@@ -88,13 +112,23 @@ class Retriever:
         logger.info(f"Found {len(results)} candidates")
         return results
     
+    def filter_by_score(
+        self,
+        candidates: List[Dict[str, Any]],
+        threshold: float
+    ) -> List[Dict[str, Any]]:
+        """Filter candidates by minimum score threshold"""
+        filtered = [c for c in candidates if c.get("score", 0.0) >= threshold]
+        logger.info(f"Filtered {len(candidates)} -> {len(filtered)} by score threshold {threshold}")
+        return filtered if filtered else candidates[:max(1, config.TOP_K_RERANK)]  # Keep at least some results
+    
     def rerank(
         self, 
         query: str, 
         candidates: List[Dict[str, Any]]
     ) -> tuple[List[Dict[str, Any]], List[float]]:
         
-        logger.info(f"Reranking to top {config.TOP_K_RERANK}")
+        logger.info(f"Reranking {len(candidates)} candidates to top {config.TOP_K_RERANK}")
         
         if len(candidates) <= config.TOP_K_RERANK:
             scores = [1.0] * len(candidates)
@@ -109,10 +143,11 @@ class Retriever:
             reverse=True
         )
         
+        # Take top K
         top_chunks = [candidate for candidate, score in ranked[:config.TOP_K_RERANK]]
         top_scores = [float(score) for candidate, score in ranked[:config.TOP_K_RERANK]]
         
-        logger.info(f"Reranked to {len(top_chunks)} chunks")
+        logger.info(f"Reranked to {len(top_chunks)} chunks, scores: {[f'{s:.3f}' for s in top_scores]}")
         return top_chunks, top_scores
     
     def get_parent_chunks(
@@ -162,7 +197,7 @@ class Retriever:
             total_tokens += chunk_tokens
             
             sources.append({
-                "chunk_id": chunk["id"],
+                "chunk_id": chunk.get("id") or chunk.get("chunk_id"),
                 "text": chunk["text"][:200] + "...",
                 "page": chunk.get("page_number"),
                 "bbox": chunk.get("bbox"),
@@ -188,4 +223,4 @@ class Retriever:
         return f"{header}\n{text}"
 
 
-retriever = Retriever()
+retriever = ImprovedRetriever()
