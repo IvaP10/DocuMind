@@ -1,139 +1,494 @@
-# DocuMind: Multimodal RAG & Document Intelligence
+# DocuMind RAG System
 
-A sophisticated Retrieval-Augmented Generation (RAG) system designed to extract and answer questions from complex PDF documents while preserving layout structure and minimizing hallucinations.
+A production-ready Retrieval-Augmented Generation (RAG) system with advanced retrieval techniques, parent-child chunking, and multi-modal optimization strategies.
 
-## 🎯 What Does This Do?
+## 🎯 Overview
 
-DocuMind helps you:
-- Upload PDF documents and ask questions about them
-- Get accurate answers with verifiable citations
-- Handle complex layouts including tables and multi-column text
-- Reduce AI hallucinations through built-in verification
+DocuMind is an enterprise-grade RAG system designed for accurate question-answering over PDF documents. It combines state-of-the-art document processing, hybrid retrieval (dense + sparse), intelligent reranking, and LLM-powered generation with built-in verification.
 
-## 🏗️ System Architecture
+### Key Features
 
-### Parent-Child Chunking Strategy
-- **Parent Chunks**: Large contextual blocks (1500 tokens) for comprehensive understanding
-- **Child Chunks**: Smaller searchable units (300 tokens) for precise retrieval
-- This hierarchical approach balances search precision with context preservation
-
-### Hybrid Search
-- **Dense Vectors**: Semantic understanding using sentence transformers
-- **Sparse Vectors**: Keyword-based matching for exact term retrieval
-- **Reranking**: Cross-encoder model refines top results for accuracy
-
-### Verification System
-- Audits generated answers against retrieved evidence
-- Checks for unsupported claims and hallucinations
-- Provides confidence scores and citation metrics
+- **Advanced Document Processing**: Docling-based PDF parsing with layout-aware extraction
+- **Parent-Child Chunking**: Hierarchical chunking strategy for better context preservation
+- **Hybrid Retrieval**: Combines dense (semantic) and sparse (BM25) search
+- **Intelligent Reranking**: Cross-encoder reranking with Cohere API support
+- **Multiple Optimization Modes**: 8 pre-configured modes for different use cases
+- **Answer Verification**: Atomic fact verification with confidence scoring
+- **Citation Tracking**: Automatic source attribution with quality metrics
+- **Comprehensive Evaluation**: Built-in evaluation framework with multiple metrics
 
 ## 📊 Performance Metrics
 
-- **MRR (Mean Reciprocal Rank)**: 0.71
-- **Recall@10**: 80%
-- **End-to-end QA Accuracy**: 72%
-- **Answer Faithfulness**: 76%
-- **Hallucination Rate**: 14%
+Based on evaluation results (`resume_metrics.json`):
+
+| Metric | Score |
+|--------|-------|
+| **Retrieval F1** | 63.01% |
+| **Precision** | 55.38% |
+| **Recall** | 83.87% |
+| **Answer Accuracy** | 61.01% |
+| **Verification Rate** | 83.87% |
+| **Avg Query Time** | 3.14s |
+| **MRR** | 0.7796 |
+
+## 🏗️ Architecture
+
+```
+┌─────────────┐
+│   PDF Doc   │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────────┐
+│  Parser         │  ← Docling (layout-aware)
+│  (parser.py)    │
+└──────┬──────────┘
+       │
+       ▼
+┌─────────────────┐
+│  Chunker        │  ← Parent-child hierarchical chunking
+│  (chunker.py)   │
+└──────┬──────────┘
+       │
+       ▼
+┌─────────────────┐
+│  Embedder       │  ← Dense + Sparse embeddings
+│  (embedder.py)  │
+└──────┬──────────┘
+       │
+       ▼
+┌─────────────────┐
+│  Vector DB      │  ← Qdrant (hybrid search)
+│  (database.py)  │
+└──────┬──────────┘
+       │
+       ▼
+┌─────────────────┐
+│  Retriever      │  ← Hybrid search + Reranking + MMR
+│  (retriever.py) │
+└──────┬──────────┘
+       │
+       ▼
+┌─────────────────┐
+│  Generator      │  ← LLM + Verification
+│  (generator.py) │
+└──────┬──────────┘
+       │
+       ▼
+┌─────────────────┐
+│    Answer       │
+└─────────────────┘
+```
 
 ## 🚀 Quick Start
 
-### Installation
+### Prerequisites
 
-1. Clone the repository
-2. Create a `key.env` file with your OpenAI API key
-3. Install dependencies: `pip install -r requirements.txt`
-4. Start Qdrant vector database (Docker recommended)
+```bash
+# Python 3.9+
+python --version
 
-### Usage
+# Install dependencies
+pip install -r requirements.txt
 
-Run `python main.py` to start the interactive mode. Enter your PDF path and ask questions about the document.
+# Install Qdrant (vector database)
+docker pull qdrant/qdrant
+docker run -p 6333:6333 qdrant/qdrant
+```
+
+### Configuration
+
+Create a `key.env` file with your API keys:
+
+```env
+# Required for embeddings (choose one)
+OPENAI_API_KEY=sk-...
+# or use local models (no key needed)
+
+# Required for LLM generation
+ANTHROPIC_API_KEY=sk-ant-...
+# or
+OPENAI_API_KEY=sk-...
+
+# Optional: For reranking
+COHERE_API_KEY=...
+
+# Qdrant settings
+QDRANT_HOST=localhost
+QDRANT_PORT=6333
+QDRANT_COLLECTION=documind_v2
+```
+
+### Basic Usage
+
+```python
+from main import process_document, answer_query
+
+# 1. Process a PDF document
+doc_id, chunks_metadata = process_document("path/to/document.pdf")
+
+# 2. Ask questions
+result = answer_query(
+    doc_id=doc_id,
+    chunks_metadata=chunks_metadata,
+    query="What is the main conclusion?",
+    mode="precision_optimized"
+)
+
+print(result['answer'])
+print(f"Confidence: {result['confidence']:.1%}")
+```
+
+### Command Line Interface
+
+```bash
+# Interactive mode
+python main.py path/to/document.pdf
+
+# Or let it prompt you
+python main.py
+```
+
+## 📋 Configuration Options
+
+### Retrieval Modes
+
+The system includes 8 optimization modes in `config.py`:
+
+| Mode | Description | Use Case |
+|------|-------------|----------|
+| `precision_optimized` | High quality, strict filtering | When accuracy is critical |
+| `hybrid_optimized` | Balanced quality/speed | General purpose |
+| `hybrid_full` | Complete pipeline | Comprehensive analysis |
+| `dense_only` | Semantic search only | Conceptual queries |
+| `no_rerank` | Skip reranking step | Speed optimization |
+| `no_parent` | Child chunks only | Fine-grained retrieval |
+| `recall_max` | Maximum coverage | Exploratory queries |
+| `latency_optimized` | Fastest responses | Real-time applications |
+
+### Key Configuration Parameters
+
+```python
+# Chunking
+CHUNK_SIZE_PARENT = 600      # Parent chunk size (tokens)
+CHUNK_SIZE_CHILD = 200       # Child chunk size (tokens)
+CHUNK_OVERLAP = 20           # Overlap between chunks
+
+# Retrieval
+TOP_K_INITIAL = 50           # Initial candidates
+TOP_K_RERANK = 5             # After reranking
+MAX_CONTEXT_TOKENS = 3500    # Max context for LLM
+
+# Hybrid Search Weights
+DENSE_WEIGHT = 0.7           # Dense search weight
+SPARSE_WEIGHT = 0.3          # Sparse search weight
+
+# Embeddings
+EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
+USE_OPENAI_EMBEDDINGS = False
+
+# LLM
+LLM_PROVIDER = "openai"      # or "anthropic"
+LLM_MODEL = "gpt-4o-mini"
+LLM_TEMPERATURE = 0.1
+```
+
+## 🧪 Evaluation
+
+The system includes a comprehensive evaluation framework:
+
+```bash
+python evaluate.py
+```
+
+### Evaluation Metrics
+
+**Retrieval Metrics:**
+- Precision: Relevance of retrieved chunks
+- Recall: Coverage of relevant information
+- F1 Score: Harmonic mean of precision and recall
+- MRR: Mean Reciprocal Rank
+
+**Generation Metrics:**
+- Answer Accuracy: Semantic similarity to ground truth
+- Confidence: Model's confidence in the answer
+- Verification Rate: Percentage of verified answers
+- Citation Quality: Precision and recall of citations
+
+### Creating Test Datasets
+
+```json
+[
+  {
+    "query": "What is the main finding?",
+    "expected_answer": "The study found that...",
+    "relevant_pages": [1, 3, 5]
+  }
+]
+```
 
 ## 📁 Project Structure
 
 ```
-documind/
-│
-├── main.py              # Main entry point for interactive queries
-├── evaluate.py          # Evaluation system with multiple test modes
-├── parser.py            # PDF parsing with Docling (handles tables & layout)
-├── chunker.py           # Parent-child chunking strategy
-├── embedder.py          # Dense + sparse vector generation
-├── database.py          # Qdrant vector database operations
-├── retriever.py         # Hybrid search + reranking
-├── generator.py         # LLM answer generation + verification
-├── models.py            # Pydantic data models
-└── config.py            # Configuration settings
+.
+├── config.py           # Configuration and experiment modes
+├── models.py           # Pydantic data models
+├── parser.py           # PDF parsing (Docling)
+├── chunker.py          # Parent-child chunking
+├── embedder.py         # Dense + sparse embeddings
+├── database.py         # Qdrant vector database
+├── retriever.py        # Hybrid retrieval + reranking
+├── generator.py        # LLM generation + verification
+├── main.py             # Main application entry point
+├── evaluate.py         # Evaluation framework
+└── README.md           # This file
 ```
 
-## ⚙️ Configuration
+## 🔧 Advanced Features
 
-Key settings in `config.py`:
-- Chunk sizes: Parent (1500 tokens), Child (300 tokens)
-- Retrieval: Top-50 initial candidates, Top-5 after reranking
-- Models: GPT-4-mini, all-mpnet-base-v2, ms-marco-MiniLM
+### Parent-Child Chunking
 
-## 🧪 Experiment Modes
+The system uses hierarchical chunking:
+- **Parent chunks** (600 tokens): Provide broader context
+- **Child chunks** (200 tokens): Enable precise retrieval
+- Strategy: Retrieve children, expand to parents for context
 
-The system supports four retrieval configurations:
-1. **hybrid_full** - All features enabled (best performance)
-2. **dense_only** - Dense vectors with reranking
-3. **no_rerank** - Hybrid search without reranking
-4. **no_parent** - No parent-child retrieval
+### Hybrid Search
 
-Run `python evaluate.py` to compare all modes.
+Combines two search paradigms:
+```python
+# Dense (semantic): Captures meaning
+dense_score = cosine_similarity(query_embedding, chunk_embedding)
 
-## 🔍 How It Works
+# Sparse (BM25): Captures keywords
+sparse_score = BM25(query_tokens, chunk_tokens)
 
-1. **Document Processing**
-   - Parse PDF with Docling to preserve tables and layout
-   - Create parent chunks (large context) and child chunks (searchable units)
-   - Generate dense embeddings and sparse vectors for child chunks
+# Combined with RRF (Reciprocal Rank Fusion)
+final_score = combine_with_rrf([dense_results, sparse_results])
+```
 
-2. **Query Processing**
-   - Embed user query with dense and sparse representations
-   - Search vector database for top-k child chunks
-   - Rerank results using cross-encoder
-   - Retrieve parent chunks for full context
+### Reranking
 
-3. **Answer Generation**
-   - Feed context to LLM with strict grounding instructions
-   - Generate answer with page citations
-   - Verify answer against retrieved evidence
-   - Calculate confidence score and citation metrics
+Two-stage retrieval:
+1. Initial retrieval: Fast, get top-K candidates
+2. Reranking: Slow but accurate, cross-encoder scoring
 
-4. **Verification Loop**
-   - Check each claim against source material
-   - Identify unsupported claims and potential hallucinations
-   - Provide transparency through citation analysis
+### MMR (Maximal Marginal Relevance)
 
-## 📈 Evaluation Metrics
+Reduces redundancy while maintaining relevance:
+```python
+MMR = λ * relevance - (1-λ) * max_similarity_to_selected
+```
 
-The system tracks comprehensive metrics:
+### Answer Verification
 
-**Retrieval Metrics:**
-- Precision, Recall, F1 Score
-- Mean Reciprocal Rank (MRR)
+Multi-level verification:
+1. **Atomic Fact Extraction**: Break answer into claims
+2. **Citation Verification**: Check each claim against sources
+3. **Confidence Calibration**: Weighted scoring
+4. **Abstention**: Refuse low-confidence answers
 
-**Generation Metrics:**
-- Answer similarity to ground truth
-- Confidence scores
-- Verification rate
-- Citation precision and recall
+## 🎛️ API Reference
 
-**Performance Metrics:**
-- Retrieval latency
-- Generation latency
-- Total query time
+### Core Functions
 
-## 🛠️ Tech Stack
+#### `process_document(pdf_path: str)`
+Process a PDF document through the entire pipeline.
 
-- **Python** - Core language
-- **Qdrant** - Vector database for hybrid search
-- **Docling** - PDF parsing with layout preservation
-- **SentenceTransformers** - Dense embeddings
-- **OpenAI API** - LLM for answer generation
-- **CrossEncoder** - Reranking model
+**Returns:** `(doc_id: UUID, chunks_metadata: List[Dict])`
+
+#### `answer_query(doc_id, chunks_metadata, query, mode)`
+Answer a query using the RAG pipeline.
+
+**Parameters:**
+- `doc_id`: Document identifier
+- `chunks_metadata`: All chunks metadata
+- `query`: User question (string)
+- `mode`: Retrieval mode (default: "precision_optimized")
+
+**Returns:** `Dict` with answer, confidence, sources, etc.
+
+### Retriever API
+
+```python
+from retriever import retriever
+
+context_data = retriever.retrieve_context(
+    document_id=doc_id,
+    query="What is X?",
+    chunks_metadata=chunks_metadata,
+    mode="hybrid_optimized"
+)
+```
+
+### Generator API
+
+```python
+from generator import generator
+
+answer_data = generator.generate_answer(
+    query="What is X?",
+    context_data=context_data
+)
+```
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+**1. Qdrant Connection Error**
+```bash
+# Start Qdrant
+docker run -p 6333:6333 qdrant/qdrant
+```
+
+**2. Out of Memory**
+```python
+# Reduce batch size
+EMBEDDING_BATCH_SIZE = 16  # Default: 32
+BATCH_SIZE = 16
+```
+
+**3. Slow Processing**
+```python
+# Use faster mode
+DEFAULT_MODE = "latency_optimized"
+
+# Or reduce reranking
+TOP_K_RERANK = 3  # Default: 5
+```
+
+**4. Low Quality Answers**
+```python
+# Use precision mode
+DEFAULT_MODE = "precision_optimized"
+
+# Increase context
+MAX_CONTEXT_TOKENS = 5000  # Default: 3500
+```
+
+## 📊 Benchmarking
+
+Run benchmarks across all modes:
+
+```python
+from evaluate import RAGEvaluator
+
+evaluator = RAGEvaluator()
+doc_id, chunks = evaluator.process_document("doc.pdf")
+test_data = evaluator.load_test_dataset("test.json")
+
+results = evaluator.evaluate_all_modes(doc_id, chunks, test_data)
+evaluator.print_results(results)
+evaluator.save_results(results, "results.json")
+```
+
+## 🛠️ Customization
+
+### Adding a New Retrieval Mode
+
+In `config.py`:
+
+```python
+EXPERIMENT_MODES["my_custom_mode"] = {
+    "name": "My Custom Mode",
+    "use_dense": True,
+    "use_sparse": True,
+    "use_reranker": True,
+    "use_parent_child": "child_with_parent_context",
+    "apply_score_threshold": True,
+    "mmr_lambda": 0.7,
+    # ... other settings
+}
+```
+
+### Using a Different LLM
+
+```python
+# In config.py
+LLM_PROVIDER = "anthropic"
+LLM_MODEL = "claude-3-5-sonnet-20241022"
+
+# Or OpenAI
+LLM_PROVIDER = "openai"
+LLM_MODEL = "gpt-4o"
+```
+
+### Custom Embedding Models
+
+```python
+# In config.py
+EMBEDDING_MODEL = "BAAI/bge-large-en-v1.5"
+
+# Or OpenAI
+USE_OPENAI_EMBEDDINGS = True
+OPENAI_EMBEDDING_MODEL = "text-embedding-3-large"
+```
+
+## 📈 Performance Optimization
+
+### For Speed
+- Use `latency_optimized` mode
+- Reduce `TOP_K_INITIAL` and `TOP_K_RERANK`
+- Disable query rewriting: `ENABLE_QUERY_REWRITING = False`
+- Use smaller embedding model
+
+### For Quality
+- Use `precision_optimized` mode
+- Increase `TOP_K_INITIAL` and `MAX_CONTEXT_TOKENS`
+- Enable all features: reranking, MMR, verification
+- Use larger embedding and LLM models
+
+### For Scale
+- Enable batch processing: `ENABLE_BATCH_PROCESSING = True`
+- Increase `EMBEDDING_BATCH_SIZE`
+- Use Qdrant cloud for distributed deployment
+- Implement caching: `ENABLE_EMBEDDING_CACHE = True`
+
+## 🤝 Contributing
+
+Contributions are welcome! Areas for improvement:
+
+1. **Multi-document support**: Query across multiple PDFs
+2. **Streaming responses**: Real-time answer generation
+3. **Advanced evaluation**: RAGAS, TruLens integration
+4. **UI/Frontend**: Web interface for the system
+5. **Additional retrieval strategies**: Query decomposition, HyDE
+6. **Multimedia support**: Images, tables as separate modalities
+
+## 📄 License
+
+MIT License - see LICENSE file for details.
+
+## 🙏 Acknowledgments
+
+- **Docling**: Layout-aware PDF parsing
+- **Qdrant**: Vector database
+- **Sentence Transformers**: Embedding models
+- **OpenAI/Anthropic**: LLM providers
+- **Cohere**: Reranking API
+
+## 📞 Support
+
+For questions or issues:
+- Create an issue in the repository
+- Check the troubleshooting section above
+- Review the evaluation metrics for optimization guidance
+
+## 🔄 Version History
+
+**v2.0** (Current)
+- Parent-child chunking
+- Hybrid retrieval (dense + sparse)
+- Multi-mode optimization
+- Answer verification
+- Comprehensive evaluation
+
+**v1.0**
+- Basic RAG pipeline
+- Dense retrieval only
+- Single-mode operation
 
 ---
 
-**Note**: This project was developed as part of research into layout-aware document retrieval systems. The parent-child chunking strategy and verification pipeline are designed to balance retrieval precision with context preservation while minimizing hallucinations in document Q&A systems.
+**Built with ❤️ for accurate, reliable document Q&A**
