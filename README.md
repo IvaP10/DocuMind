@@ -445,7 +445,7 @@ OPENAI_EMBEDDING_MODEL = "text-embedding-3-large"
 - Use Qdrant cloud for distributed deployment
 - Implement caching: `ENABLE_EMBEDDING_CACHE = True`
 
-## 🤝 Contributing
+## Contributions
 
 Contributions are welcome! Areas for improvement:
 
@@ -456,39 +456,14 @@ Contributions are welcome! Areas for improvement:
 5. **Additional retrieval strategies**: Query decomposition, HyDE
 6. **Multimedia support**: Images, tables as separate modalities
 
-## 📄 License
+## License
 
 MIT License - see LICENSE file for details.
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - **Docling**: Layout-aware PDF parsing
 - **Qdrant**: Vector database
 - **Sentence Transformers**: Embedding models
 - **OpenAI/Anthropic**: LLM providers
 - **Cohere**: Reranking API
-
-## 📞 Support
-
-For questions or issues:
-- Create an issue in the repository
-- Check the troubleshooting section above
-- Review the evaluation metrics for optimization guidance
-
-## 🔄 Version History
-
-**v2.0** (Current)
-- Parent-child chunking
-- Hybrid retrieval (dense + sparse)
-- Multi-mode optimization
-- Answer verification
-- Comprehensive evaluation
-
-**v1.0**
-- Basic RAG pipeline
-- Dense retrieval only
-- Single-mode operation
-
----
-
-**Built with ❤️ for accurate, reliable document Q&A**
