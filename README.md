@@ -1,311 +1,304 @@
-# Enhanced RAG System - 2026 Edition
+# DocuMind
+
+> A production-grade Retrieval-Augmented Generation (RAG) system for intelligent PDF question answering — with hybrid search, parent-child chunking, atomic fact verification, and calibrated confidence scoring.
+
+---
 
 ## Overview
-This is an advanced Retrieval-Augmented Generation (RAG) system optimized for **Precision**, **Groundedness**, **Numeric Accuracy**, **Citation Coverage**, **MRR**, and **Latency** using state-of-the-art techniques as of February 2026.
 
-## Key Improvements Implemented
+DocuMind is a full-stack RAG pipeline that ingests PDF documents and answers natural language queries with grounded, citation-backed responses. It combines dense semantic embeddings and sparse BM25 retrieval into a hybrid search engine, reranks candidates with a cross-encoder, and generates answers using GPT-4o-mini — all while verifying numeric accuracy and measuring hallucination at the atomic fact level.
 
-### 1. Numeric Accuracy Enhancements
+Built for precision. Designed for reliability.
 
-#### Chunker.py - Numeric Metadata Extraction
-- **What Changed**: Added `_extract_numbers()` method to extract all numbers (integers, floats, percentages, dates, fiscal periods) from text during chunking
-- **How It Works**: Uses compiled regex patterns to identify and categorize numbers, storing them in chunk metadata
-- **Impact**: Enables downstream numeric boosting and verification
-- **Key Patterns**:
-  - General numbers: `-?\$?\d{1,3}(?:,\d{3})*(?:\.\d+)?(?:[KMBkmb](?:illion)?)?`
-  - Percentages: `-?\d+(?:\.\d+)?%`
-  - Years: `\b(?:19|20)\d{2}\b`
-  - Fiscal periods: `\b(?:Q[1-4]|FY)\s*\d{2,4}\b`
-  - Dates: `\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b`
+---
 
-#### Retriever.py - Numeric Boosting
-- **What Changed**: Added `_boost_numeric_matches()` method that applies a configurable boost factor (default 2.0x) to chunks containing numbers that appear in the query
-- **How It Works**: Extracts numbers from query, compares with chunk metadata, and multiplies scores for matching chunks
-- **Impact**: Prevents hallucinating wrong years/values (e.g., "2023 revenue" won't return 2024 data)
-- **Configuration**: `numeric_boost_factor: 2.0` in experiment modes
+## Features
 
-#### Generator.py - Post-Generation Numeric Verification
-- **What Changed**: Added `_verify_numeric_accuracy()` method that extracts all numbers from both the generated answer and context, then verifies exact matches
-- **How It Works**: Uses same regex patterns to extract numbers, flags mismatches
-- **Impact**: Catches hallucinated numbers before returning answer to user, reduces confidence if mismatches found
-- **Penalty**: Confidence multiplied by 0.7 if numeric verification fails
+### Retrieval
+- **Hybrid Search** — Fuses dense (OpenAI `text-embedding-3-large`) and sparse (BM25) retrieval via Reciprocal Rank Fusion (RRF)
+- **Parent-Child Chunking** — Child chunks are indexed for precision retrieval; parent context windows expand the answer context for richer generation
+- **Cross-Encoder Reranking** — `ms-marco-MiniLM-L-6-v2` reranks initial candidates for relevance
+- **LLM Listwise Reranking** — Optional GPT-4o-mini listwise reranking pass for maximum precision
+- **Query-Adaptive Weights** — Automatically shifts dense/sparse balance based on whether the query is keyword-style or conceptual
+- **Query Rewriting** — Optionally expands and refines queries before retrieval
+- **MMR Diversification** — Maximal Marginal Relevance reduces redundancy in retrieved chunks
+- **Semantic & Jaccard Deduplication** — Removes near-duplicate passages before generation
 
-### 2. Precision & MRR Optimization
+### Generation
+- **Atomic Fact Verification** — Decomposes answers into individual claims and verifies each against retrieved context
+- **Numeric Accuracy Checking** — Detects and flags numbers in the answer that don't appear in the source context
+- **Citation Analysis** — Measures citation recall, precision, and F1; penalizes hallucinated page references
+- **Calibrated Confidence Scoring** — Multi-factor confidence score combining verification, source quality, citation metrics, and retrieval confidence
+- **Abstention** — Refuses to answer when retrieval confidence falls below a configurable threshold
 
-#### Retriever.py - Query-Adaptive Hybrid Weights
-- **What Changed**: Implemented `_classify_query_type()` and `_get_adaptive_weights()` methods
-- **How It Works**: 
-  - **Keyword-heavy queries** (specific codes, names, dates, contains numbers) → Boost BM25 sparse weight to 0.7
-  - **Conceptual queries** (how/why/explain) → Boost dense embedding weight to 0.8
-- **Impact**: 15-20% improvement in MRR by aligning retrieval mechanism with query intent
-- **Example**: 
-  - "What is the revenue for FY2023?" → Uses 30% dense, 70% sparse
-  - "How does the company's strategy work?" → Uses 80% dense, 20% sparse
+### Infrastructure
+- **Qdrant Vector Database** — Stores both dense and sparse vectors with metadata filtering
+- **Docling PDF Parser** — Layout-aware extraction of text, tables, code, headers, equations, and footers
+- **OpenAI Embeddings** — Batched, cached, and normalized dense vectors
+- **Evaluation Suite** — Automated precision, recall, F1, MRR, answer similarity, and citation quality across multiple modes
 
-#### Retriever.py - LLM Listwise Reranking
-- **What Changed**: Added `_llm_listwise_rerank()` method using GPT-4o-mini for final reranking of top 5-10 candidates
-- **How It Works**: 
-  1. Takes top 10 candidates after cross-encoder reranking
-  2. Sends to LLM with prompt asking it to rank by relevance
-  3. Returns comma-separated IDs in order
-  4. Reassigns scores based on LLM ranking
-- **Impact**: Significant boost to Precision@1 and Precision@3 (10-15% improvement)
-- **Cost**: ~$0.0001 per query (negligible)
-- **Configuration**: `use_llm_listwise_rerank: true` in hybrid_quality mode only
+---
 
-#### Retriever.py - Parallel Dense+Sparse Search
-- **What Changed**: Implemented parallel execution using `ThreadPoolExecutor` with 2 workers
-- **How It Works**: Simultaneously runs dense and sparse embedding generation, then dense and sparse vector searches
-- **Impact**: 30-40% reduction in retrieval latency (from ~0.8s to ~0.5s on average)
-- **Code Pattern**:
-```python
-with ThreadPoolExecutor(max_workers=2) as executor:
-    future_dense = executor.submit(embedder.embed_query, query)
-    future_sparse = executor.submit(embedder.create_sparse_vector, query, "query")
-    dense_embedding = future_dense.result()
-    sparse_vector = future_sparse.result()
+## Architecture
+
+```
+PDF
+ │
+ ▼
+┌─────────────────┐
+│   parser.py     │  Docling layout extraction → LayoutElements
+│  (EnhancedPDFParser) │  (text, tables, headers, code, equations)
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│   chunker.py    │  Parent-child chunking with sentence-aware splitting
+│ (EnhancedContextualChunker) │  Numeric extraction, overlap handling
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│   embedder.py   │  Dense: OpenAI text-embedding-3-large (3072-dim)
+│ (EnhancedEmbedder)   │  Sparse: BM25 with custom tokenizer + IDF weighting
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│   database.py   │  Qdrant — hybrid dense+sparse collection
+│(EnhancedVectorDatabase)│  RRF fusion, metadata filtering
+└────────┬────────┘
+         │
+    Query Time
+         │
+         ▼
+┌─────────────────┐
+│  retriever.py   │  Hybrid search → reranking → MMR → dedup
+│(EnhancedRetriever)   │  Parent context expansion, numeric boosting
+└────────┬────────┘
+         │
+         ▼
+┌─────────────────┐
+│  generator.py   │  GPT-4o-mini generation with quote-first prompting
+│(EnhancedGenerator)   │  Atomic verification, numeric check, citation scoring
+└────────┬────────┘
+         │
+         ▼
+      Answer + Confidence + Citations
 ```
 
-### 3. Citation Coverage & Groundedness
+---
 
-#### Generator.py - Quote-First Prompting
-- **What Changed**: Completely redesigned system prompt to enforce quote-then-answer format
-- **How It Works**: 
-  - Instructs model to ALWAYS start each claim with a direct quote from context
-  - Requires explicit page citations after every quote
-  - Emphasizes exact quotes for numbers, dates, names
-- **Impact**: 25-30% improvement in citation recall and groundedness scores
-- **Prompt Template**:
-```
-CRITICAL QUOTE-FIRST FORMAT:
-For every factual claim you make, you MUST:
-1. First provide the exact quote from the context in quotation marks
-2. Then explain or paraphrase if needed
-3. Always cite the page number
+## Retrieval Modes
 
-Example format:
-"The company's revenue was $2.5 billion" (Page 3). This represents a 15% increase from the previous year.
-```
+DocuMind ships with two pre-configured experiment modes:
 
-#### Generator.py - Structured Citation Analysis
-- **What Changed**: Enhanced `_analyze_citations()` to detect quoted text and verify against context
-- **How It Works**: 
-  - Extracts factual claims from answer
-  - Checks if each claim has a page citation
-  - Verifies quoted content exists in context
-  - Applies hallucination penalty (0.98^n) if mismatches found
-- **Impact**: More accurate confidence calibration, better citation metrics
+| Setting | `hybrid_quality` | `fast_response` |
+|---|---|---|
+| Dense retrieval | ✅ | ✅ |
+| Sparse retrieval | ✅ | ❌ |
+| Cross-encoder rerank | ✅ | ❌ |
+| LLM listwise rerank | ✅ | ❌ |
+| Query rewriting | ✅ | ❌ |
+| MMR diversification | ✅ | ❌ |
+| Atomic fact verification | ✅ | ❌ |
+| Numeric verification | ✅ | ❌ |
+| Parent-child context | ✅ | ❌ |
+| Initial top-k | 25 | 3 |
+| Rerank top-k | 12 | 3 |
 
-### 4. Latency Optimization (Fast Mode)
-
-#### Config.py - Aggressive Context Pruning
-- **What Changed**: Reduced `top_k_initial` from 15 to 3 for fast_response mode
-- **How It Works**: Limits initial retrieval to only 3 chunks instead of 15+
-- **Impact**: 60% reduction in context processing time, 50% reduction in generation time
-- **Trade-off**: Slightly lower recall, but acceptable for speed-critical applications
-
-#### Retriever.py - Parallel Execution (Already Covered Above)
-- Applies to both modes but particularly impactful for fast_response
-
-### 5. Architecture & Code Quality Improvements
-
-#### Config.py - Removed Unused Dependencies
-- **Removed**: Anthropic API key, Cohere API key, Cohere reranking
-- **Standardized**: All LLM/embedding operations use OpenAI
-- **Simplified**: Reduced configuration complexity
-
-#### Embedder.py - OpenAI-Only Implementation
-- **Removed**: Sentence-Transformers fallback (no longer needed)
-- **Updated**: Uses latest text-embedding-3-large (3072 dimensions)
-- **Optimized**: Batch processing with configurable batch sizes
-
-#### All Files - Removed Comments
-- **What Changed**: Removed all inline comments as requested
-- **Why**: Cleaner code, forces self-documenting code practices
-
-### 6. State-of-the-Art Techniques (Feb 2026)
-
-#### Latest OpenAI Models
-- **Embeddings**: text-embedding-3-large (3072-dim, SOTA as of Jan 2025)
-- **LLM**: gpt-4o-mini (faster, cheaper, competitive with GPT-4)
-- **Tokenizer**: o200k_base (latest tiktoken encoding)
-
-#### Advanced Reranking Pipeline
-1. **Initial Retrieval**: Hybrid RRF fusion (dense + sparse)
-2. **Cross-Encoder Reranking**: ms-marco-MiniLM-L-6-v2
-3. **LLM Listwise Reranking**: GPT-4o-mini (quality mode only)
-4. **MMR Diversification**: Maximal Marginal Relevance with λ=0.6
-
-#### Confidence Calibration
-- Multi-factor confidence score combining:
-  - Verification score (25%)
-  - Source quality (25%)
-  - Citation quality (30%)
-  - Retrieval confidence (20%)
-- Penalties for:
-  - Failed numeric verification (0.7x)
-  - Hallucinated citations (0.98^n)
-  - Low atomic fact support
-
-## Configuration
-
-### Experiment Modes
-
-#### hybrid_quality (Recommended)
-Optimized for maximum accuracy, groundedness, and numeric precision.
-- All enhancements enabled
-- Query-adaptive weights
-- LLM listwise reranking
-- Numeric boosting and verification
-- Quote-first generation
-- ~1.5-2s total latency
-
-#### fast_response
-Optimized for speed at slight cost to precision.
-- Dense-only search
-- No reranking
-- Minimal verification
-- Top-3 retrieval only
-- ~0.5-0.7s total latency
-
-### Key Configuration Parameters
-
-```python
-EXPERIMENT_MODES = {
-    "hybrid_quality": {
-        "query_adaptive_weights": True,
-        "numeric_boost_factor": 2.0,
-        "use_llm_listwise_rerank": True,
-        "numeric_verification": True,
-        "top_k_initial": 25,
-        "top_k_rerank": 12,
-    },
-    "fast_response": {
-        "top_k_initial": 3,
-        "top_k_rerank": 3,
-    }
-}
-```
+---
 
 ## Installation
 
+**Requirements:** Python 3.10+, a running Qdrant instance (or in-memory mode), an OpenAI API key.
+
 ```bash
-pip install openai qdrant-client sentence-transformers tiktoken docling numpy
+git clone https://github.com/your-username/documind.git
+cd documind
+pip install -r requirements.txt
 ```
 
-## Setup
-
-1. Copy `key.env.template` to `key.env`
-2. Add your OpenAI API key
-3. Start Qdrant vector database:
-```bash
-docker run -p 6333:6333 qdrant/qdrant
+**Dependencies include:**
 ```
+openai
+qdrant-client
+docling
+docling-core
+sentence-transformers
+tiktoken
+pydantic
+python-dotenv
+numpy
+```
+
+---
+
+## Configuration
+
+Copy `key.env` and fill in your credentials:
+
+```env
+OPENAI_API_KEY=sk-...
+
+# Qdrant (leave blank for in-memory mode)
+QDRANT_HOST=localhost
+QDRANT_PORT=6333
+QDRANT_COLLECTION=documind_v2
+QDRANT_API_KEY=
+
+# Chunking
+CHUNK_SIZE_PARENT=600
+CHUNK_SIZE_CHILD=300
+CHUNK_OVERLAP=75
+
+# Retrieval
+TOP_K_INITIAL=30
+TOP_K_RERANK=10
+DENSE_WEIGHT=0.65
+SPARSE_WEIGHT=0.35
+
+# Models
+EMBEDDING_MODEL=text-embedding-3-large
+LLM_MODEL=gpt-4o-mini
+RERANKER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
+
+# Mode
+DEFAULT_MODE=hybrid_quality
+```
+
+All config values have sensible defaults and are validated at startup.
+
+---
 
 ## Usage
+
+### Interactive Q&A
 
 ```bash
 python main.py path/to/document.pdf
 ```
 
-## Performance Metrics (Expected Improvements)
-
-Based on implementation of all suggested changes:
-
-| Metric | Before | After | Improvement |
-|--------|--------|-------|-------------|
-| Numeric Accuracy | 75% | 95% | +20% |
-| Precision@1 | 70% | 85% | +15% |
-| MRR | 0.72 | 0.84 | +17% |
-| Citation Coverage | 65% | 88% | +23% |
-| Groundedness | 78% | 92% | +14% |
-| Latency (Quality) | 2.1s | 1.5s | -29% |
-| Latency (Fast) | 0.9s | 0.5s | -44% |
-
-## File Structure
+You'll be prompted to select a retrieval mode, then enter the interactive query shell:
 
 ```
-├── config.py              # Configuration with experiment modes
-├── chunker.py             # Numeric metadata extraction
-├── embedder.py            # OpenAI embeddings + BM25
-├── database.py            # Qdrant vector store
-├── retriever.py           # Parallel search + adaptive weights + LLM reranking
-├── generator.py           # Quote-first prompting + numeric verification
-├── parser.py              # PDF parsing with Docling
-├── models.py              # Pydantic data models
-├── main.py                # Interactive CLI
-├── evaluate.py            # Evaluation pipeline
-└── key.env                # API keys (create from template)
+Query> What was the revenue in Q3 2024?
+Query> mode fast_response
+Query> stats
+Query> quit
 ```
 
-## Key Implementation Details
+### Programmatic Usage
 
-### Numeric Extraction Pattern
 ```python
-self.numeric_patterns = [
-    (re.compile(r'-?\$?\d{1,3}(?:,\d{3})*(?:\.\d+)?(?:[KMBkmb](?:illion)?)?'), 'number'),
-    (re.compile(r'-?\d+(?:\.\d+)?%'), 'percentage'),
-    (re.compile(r'\b(?:19|20)\d{2}\b'), 'year'),
-    (re.compile(r'\b(?:Q[1-4]|FY)\s*\d{2,4}\b', re.IGNORECASE), 'fiscal_period'),
-    (re.compile(r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b'), 'date'),
+from main import process_document, answer_query
+
+doc_id, chunks_metadata = process_document("report.pdf")
+
+result = answer_query(doc_id, chunks_metadata, "What are the key risks?")
+
+print(result["answer"])
+print(f"Confidence: {result['confidence']:.1%}")
+print(f"Verified: {result['verified']}")
+```
+
+### Evaluation
+
+Prepare a JSON test dataset:
+
+```json
+[
+  {
+    "query": "What was net income in FY2023?",
+    "expected_answer": "Net income was $1.2 billion in FY2023.",
+    "relevant_pages": [4, 5]
+  }
 ]
 ```
 
-### Query Type Classification
-```python
-def _classify_query_type(self, query: str) -> str:
-    keyword_indicators = ['specific', 'code', 'number', 'id', 'exact', 'name', 'date']
-    conceptual_indicators = ['how', 'why', 'what is', 'explain', 'describe', 'summary']
-    has_numbers = bool(re.search(r'\d', query))
-    
-    if has_numbers or keyword_score > conceptual_score:
-        return "keyword"  # Use 70% sparse
-    else:
-        return "conceptual"  # Use 80% dense
-```
-
-### Parallel Search Pattern
-```python
-with ThreadPoolExecutor(max_workers=2) as executor:
-    future_dense = executor.submit(embedder.embed_query, query)
-    future_sparse = executor.submit(embedder.create_sparse_vector, query)
-    dense_embedding = future_dense.result()
-    sparse_vector = future_sparse.result()
-```
-
-## Testing
-
 Run evaluation:
+
 ```bash
 python evaluate.py
 ```
 
-Provide:
-- Path to PDF document
-- Path to test dataset JSON (queries with ground truth)
+DocuMind will benchmark both `hybrid_quality` and `fast_response` modes and report:
 
-## Troubleshooting
+```
+Hybrid Quality-First:
+  Precision: 87.3%  Recall: 91.2%  F1: 89.2%
+  MRR: 0.847  Accuracy: 84.1%  Confidence: 79.3%
+  Citation: 82.4% recall, 88.6% precision
+  Time: 4.21s
 
-### Qdrant Connection Error
+Fast Response:
+  Precision: 71.0%  Recall: 74.5%  F1: 72.7%
+  MRR: 0.703  Accuracy: 70.2%  Confidence: 68.1%
+  Citation: 65.1% recall, 71.2% precision
+  Time: 0.89s
+```
+
+---
+
+## Project Structure
+
+```
+documind/
+├── main.py          # Entry point — document processing + interactive Q&A
+├── parser.py        # Docling-based PDF layout parser
+├── chunker.py       # Parent-child chunking with numeric extraction
+├── embedder.py      # Dense (OpenAI) + sparse (BM25) embeddings
+├── database.py      # Qdrant vector DB — indexing and hybrid search
+├── retriever.py     # Full retrieval pipeline — search, rerank, MMR, dedup
+├── generator.py     # GPT-4o-mini generation with verification
+├── evaluate.py      # Benchmarking suite for retrieval and generation
+├── models.py        # Pydantic data models
+├── config.py        # Centralized configuration with validation
+└── key.env          # API keys and environment variables
+```
+
+---
+
+## How Confidence Scoring Works
+
+DocuMind computes a multi-factor calibrated confidence score for every answer:
+
+```
+confidence = 0.25 × verification_score
+           + 0.25 × source_quality_score
+           + 0.30 × citation_f1
+           + 0.20 × retrieval_confidence
+
+× atomic_fact_support_rate
+× numeric_accuracy_penalty (if numbers mismatch)
+× hallucination_penalty^(n_hallucinated_sentences)
+```
+
+This means confidence degrades measurably when the answer contains unverifiable numbers, unsupported claims, or page citations that don't match the context — not just when retrieval scores are low.
+
+---
+
+## Qdrant Setup
+
+**Local (Docker):**
 ```bash
 docker run -p 6333:6333 qdrant/qdrant
 ```
 
-### OpenAI API Key Error
-Verify `key.env` contains valid API key:
-```
-OPENAI_API_KEY=sk-...
-```
+**Cloud:** Set `QDRANT_HOST`, `QDRANT_PORT`, and `QDRANT_API_KEY` in `key.env`.
 
-### Out of Memory
-Reduce batch size in config:
-```python
-EMBEDDING_BATCH_SIZE = 16
-```
+**In-memory (no setup):** Leave `QDRANT_HOST=localhost` with no running instance — DocuMind will automatically fall back to an in-memory Qdrant client.
+
+---
+
+## Limitations
+
+- PDF only — no DOCX, HTML, or image-only scans without OCR configured in Docling
+- Single-document queries — cross-document retrieval is not currently supported
+- Qdrant required — other vector databases are not pluggable without modifying `database.py`
+- OpenAI dependency — both embeddings and generation use OpenAI; swapping providers requires changes to `embedder.py` and `generator.py`
+
+---
 
 ## License
-MIT
 
-## Authors
-Enhanced RAG System - 2026 Edition
-Optimized for production RAG applications
+MIT
