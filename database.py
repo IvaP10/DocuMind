@@ -24,8 +24,6 @@ logger = logging.getLogger(__name__)
 class EnhancedVectorDatabase:
     
     def __init__(self):
-        logger.info(f"Connecting to Qdrant at {config.QDRANT_HOST}:{config.QDRANT_PORT}")
-        
         try:
             if config.QDRANT_API_KEY:
                 self.client = QdrantClient(
@@ -44,44 +42,15 @@ class EnhancedVectorDatabase:
             
             self._ensure_collection()
             
-            logger.info("Vector database initialized successfully")
-            
         except Exception as e:
-            logger.error(f"Failed to connect to Qdrant: {str(e)}")
-            logger.error("\n" + "="*80)
-            logger.error("QDRANT CONNECTION ERROR")
-            logger.error("="*80)
-            logger.error("Qdrant vector database is not running or not accessible.")
-            logger.error("\nTo fix this, you have 3 options:")
-            logger.error("\n1. LOCAL DOCKER (Recommended):")
-            logger.error("   docker run -p 6333:6333 -p 6334:6334 -v $(pwd)/qdrant_storage:/qdrant/storage qdrant/qdrant")
-            logger.error("\n2. LOCAL BINARY:")
-            logger.error("   Download from: https://github.com/qdrant/qdrant/releases")
-            logger.error("   Run: ./qdrant")
-            logger.error("\n3. QDRANT CLOUD (Free tier available):")
-            logger.error("   Sign up at: https://cloud.qdrant.io")
-            logger.error("   Then set in your key.env file:")
-            logger.error("   QDRANT_HOST=your-cluster.cloud.qdrant.io")
-            logger.error("   QDRANT_API_KEY=your-api-key")
-            logger.error("\n4. IN-MEMORY MODE (For testing only, no persistence):")
-            logger.error("   Set QDRANT_HOST=:memory: in key.env")
-            logger.error("="*80 + "\n")
-            
-            # Try in-memory mode as fallback
             if config.QDRANT_HOST != ":memory:":
-                logger.warning("Attempting fallback to in-memory mode...")
                 try:
                     self.client = QdrantClient(":memory:")
                     self.collection_name = config.QDRANT_COLLECTION
                     self.embedding_dimension = config.EMBEDDING_DIMENSION
                     self._ensure_collection()
-                    logger.warning("⚠️  Running in IN-MEMORY mode - data will NOT persist!")
-                    logger.warning("⚠️  For production use, please set up a proper Qdrant instance.")
                 except Exception as e2:
-                    logger.error(f"Even in-memory mode failed: {str(e2)}")
-                    raise RuntimeError(
-                        "Cannot initialize vector database. Please set up Qdrant or use in-memory mode."
-                    ) from e
+                    raise RuntimeError("Cannot initialize vector database") from e
             else:
                 raise
     
@@ -91,15 +60,9 @@ class EnhancedVectorDatabase:
             collection_names = [c.name for c in collections]
             
             if self.collection_name not in collection_names:
-                logger.info(f"Creating collection: {self.collection_name}")
                 self._create_collection()
-            else:
-                logger.info(f"Collection '{self.collection_name}' already exists")
-                collection_info = self.client.get_collection(self.collection_name)
-                logger.info(f"Collection info: {collection_info}")
                 
         except Exception as e:
-            logger.error(f"Collection setup error: {str(e)}")
             raise
     
     def _create_collection(self):
@@ -120,7 +83,6 @@ class EnhancedVectorDatabase:
                 )
             }
         )
-        logger.info(f"Collection '{self.collection_name}' created successfully")
     
     def index_chunks(
         self,
@@ -140,10 +102,7 @@ class EnhancedVectorDatabase:
         child_sparse = [sparse_vectors[i] for i in child_indices]
         
         if not child_chunks:
-            logger.warning("No child chunks to index")
             return
-        
-        logger.info(f"Indexing {len(child_chunks)} child chunks (out of {len(chunks)} total)")
         
         points = []
         for chunk, dense_emb, sparse_vec in zip(child_chunks, child_dense, child_sparse):
@@ -158,9 +117,6 @@ class EnhancedVectorDatabase:
                     collection_name=self.collection_name,
                     points=batch
                 )
-                logger.debug(f"Indexed batch {i // batch_size + 1}/{(len(points) + batch_size - 1) // batch_size}")
-            
-            logger.info(f"Successfully indexed {len(points)} chunks")
             
         except Exception as e:
             logger.error(f"Indexing error: {str(e)}")
@@ -424,6 +380,39 @@ class EnhancedVectorDatabase:
         except Exception as e:
             logger.error(f"Deletion error: {str(e)}")
             raise
+    
+    def hybrid_search(
+        self,
+        document_id: UUID,
+        dense_vector: np.ndarray,
+        sparse_vector: Dict[int, float],
+        limit: int = 50,
+        dense_weight: float = 0.65,
+        sparse_weight: float = 0.35
+    ) -> List[Dict[str, Any]]:
+        query_filter = self._build_filter(document_id)
+        results = self._hybrid_search(dense_vector, sparse_vector, query_filter, limit)
+        return self._format_results(results)
+    
+    def dense_search(
+        self,
+        document_id: UUID,
+        dense_vector: np.ndarray,
+        limit: int = 50
+    ) -> List[Dict[str, Any]]:
+        query_filter = self._build_filter(document_id)
+        results = self._dense_search(dense_vector, query_filter, limit)
+        return self._format_results(results)
+    
+    def sparse_search(
+        self,
+        document_id: UUID,
+        sparse_vector: Dict[int, float],
+        limit: int = 50
+    ) -> List[Dict[str, Any]]:
+        query_filter = self._build_filter(document_id)
+        results = self._sparse_search(sparse_vector, query_filter, limit)
+        return self._format_results(results)
     
     def get_collection_stats(self) -> Dict[str, Any]:
         try:

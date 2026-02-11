@@ -1,7 +1,3 @@
-"""
-Enhanced Main Application (2026)
-Improved UX, error handling, and logging
-"""
 from pathlib import Path
 from uuid import uuid4, UUID
 import logging
@@ -17,7 +13,6 @@ from retriever import retriever
 from generator import generator
 import config
 
-# Setup logging
 logging.basicConfig(
     level=getattr(logging, config.LOG_LEVEL),
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -28,20 +23,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# In-memory storage for chunks
 chunks_db: Dict[str, List[Dict[str, Any]]] = {}
 
 
 def process_document(pdf_path: str) -> tuple[UUID, List[Dict[str, Any]]]:
-    """
-    Process a PDF document through the entire pipeline
-    
-    Args:
-        pdf_path: Path to PDF file
-        
-    Returns:
-        Tuple of (document_id, chunks_metadata)
-    """
     logger.info("=" * 80)
     logger.info("DOCUMENT PROCESSING PIPELINE")
     logger.info("=" * 80)
@@ -50,14 +35,12 @@ def process_document(pdf_path: str) -> tuple[UUID, List[Dict[str, Any]]]:
     doc_id = uuid4()
     
     try:
-        # Step 1: Parse PDF
         logger.info("Step 1/5: Parsing PDF...")
         parse_start = time.time()
         total_pages, elements = parser.parse(pdf_path)
         parse_time = time.time() - parse_start
         logger.info(f"✓ Parsed {total_pages} pages, {len(elements)} elements ({parse_time:.2f}s)")
         
-        # Step 2: Create chunks
         logger.info("Step 2/5: Creating chunks...")
         chunk_start = time.time()
         chunks = chunker.create_chunks(str(doc_id), elements)
@@ -67,33 +50,27 @@ def process_document(pdf_path: str) -> tuple[UUID, List[Dict[str, Any]]]:
         child_count = sum(1 for c in chunks if c.is_child)
         logger.info(f"✓ Created {len(chunks)} chunks: {parent_count} parents, {child_count} children ({chunk_time:.2f}s)")
         
-        # Step 3: Create metadata
         logger.info("Step 3/5: Creating metadata...")
         chunks_metadata = _create_chunks_metadata(chunks)
         logger.info(f"✓ Metadata created for {len(chunks_metadata)} chunks")
         
-        # Step 4: Generate embeddings
         logger.info("Step 4/5: Generating embeddings...")
         embed_start = time.time()
         
-        # Get texts from all chunks for BM25 index
         all_texts = [chunk.text for chunk in chunks]
         
-        # Generate embeddings (for all chunks, not just children)
         dense_embeddings = embedder.embed_texts(all_texts, show_progress=True)
         sparse_vectors = embedder.create_sparse_vectors_batch(all_texts)
         
         embed_time = time.time() - embed_start
         logger.info(f"✓ Generated {len(dense_embeddings)} dense + {len(sparse_vectors)} sparse embeddings ({embed_time:.2f}s)")
         
-        # Step 5: Index into vector database
         logger.info("Step 5/5: Indexing into vector database...")
         index_start = time.time()
         vector_db.index_chunks(chunks, dense_embeddings, sparse_vectors)
         index_time = time.time() - index_start
         logger.info(f"✓ Indexed into Qdrant ({index_time:.2f}s)")
         
-        # Total time
         total_time = time.time() - start_time
         
         logger.info("=" * 80)
@@ -112,7 +89,6 @@ def process_document(pdf_path: str) -> tuple[UUID, List[Dict[str, Any]]]:
 
 
 def _create_chunks_metadata(chunks: List) -> List[Dict[str, Any]]:
-    """Create metadata dictionary from chunks"""
     metadata = []
     
     for chunk in chunks:
@@ -136,20 +112,8 @@ def answer_query(
     doc_id: UUID,
     chunks_metadata: List[Dict[str, Any]],
     query: str,
-    mode: str = "hybrid_optimized"
+    mode: str = "hybrid_quality"
 ) -> Dict[str, Any]:
-    """
-    Answer a query using the RAG pipeline
-    
-    Args:
-        doc_id: Document ID
-        chunks_metadata: All chunks metadata
-        query: User question
-        mode: Retrieval mode
-        
-    Returns:
-        Answer data
-    """
     logger.info("\n" + "=" * 80)
     logger.info("QUERY ANSWERING PIPELINE")
     logger.info("=" * 80)
@@ -159,7 +123,6 @@ def answer_query(
     start_time = time.time()
     
     try:
-        # Step 1: Retrieve context
         logger.info("\nStep 1/2: Retrieving context...")
         context_data = retriever.retrieve_context(
             document_id=doc_id,
@@ -168,18 +131,15 @@ def answer_query(
             mode=mode
         )
         
-        # Step 2: Generate answer
         logger.info("\nStep 2/2: Generating answer...")
         answer_data = generator.generate_answer(
             query=query,
             context_data=context_data
         )
         
-        # Total time
         total_time = time.time() - start_time
         answer_data["processing_time"] = total_time
         
-        # Display results
         logger.info("=" * 80)
         logger.info("✓ ANSWER GENERATED")
         logger.info(f"  Confidence: {answer_data['confidence']:.1%}")
@@ -188,7 +148,6 @@ def answer_query(
         logger.info(f"  Processing time: {total_time:.2f}s")
         logger.info("=" * 80)
         
-        # Print answer
         print("\n" + "=" * 80)
         print("ANSWER:")
         print("=" * 80)
@@ -206,20 +165,13 @@ def answer_query(
         raise
 
 
-def interactive_mode(doc_id: UUID, chunks_metadata: List[Dict[str, Any]]):
-    """
-    Interactive query loop
-    
-    Args:
-        doc_id: Document ID
-        chunks_metadata: All chunks metadata
-    """
+def interactive_mode(doc_id: UUID, chunks_metadata: List[Dict[str, Any]], initial_mode: str):
     print("\n" + "=" * 80)
     print("INTERACTIVE MODE")
     print("=" * 80)
     print(f"Document ID: {doc_id}")
     print(f"Available modes: {', '.join(config.EXPERIMENT_MODES.keys())}")
-    print(f"Current mode: {config.DEFAULT_MODE}")
+    print(f"Current mode: {initial_mode}")
     print("\nCommands:")
     print("  <query>           - Ask a question")
     print("  mode <name>       - Change retrieval mode")
@@ -227,7 +179,7 @@ def interactive_mode(doc_id: UUID, chunks_metadata: List[Dict[str, Any]]):
     print("  quit/exit         - Exit interactive mode")
     print("=" * 80 + "\n")
     
-    current_mode = config.DEFAULT_MODE
+    current_mode = initial_mode
     
     while True:
         try:
@@ -236,7 +188,6 @@ def interactive_mode(doc_id: UUID, chunks_metadata: List[Dict[str, Any]]):
             if not user_input:
                 continue
             
-            # Check for commands
             if user_input.lower() in ['quit', 'exit', 'q']:
                 print("Goodbye!")
                 break
@@ -254,7 +205,6 @@ def interactive_mode(doc_id: UUID, chunks_metadata: List[Dict[str, Any]]):
                 _print_stats(doc_id, chunks_metadata)
                 continue
             
-            # Process as query
             try:
                 answer_query(doc_id, chunks_metadata, user_input, current_mode)
             except Exception as e:
@@ -269,13 +219,11 @@ def interactive_mode(doc_id: UUID, chunks_metadata: List[Dict[str, Any]]):
 
 
 def _print_stats(doc_id: UUID, chunks_metadata: List[Dict[str, Any]]):
-    """Print document statistics"""
     parent_count = sum(1 for c in chunks_metadata if c.get("is_parent"))
     child_count = sum(1 for c in chunks_metadata if not c.get("is_parent"))
     total_tokens = sum(c.get("token_count", 0) for c in chunks_metadata)
     pages = set(c.get("page_number") for c in chunks_metadata)
     
-    # Vector DB stats
     try:
         db_stats = vector_db.get_collection_stats()
     except:
@@ -298,7 +246,6 @@ def _print_stats(doc_id: UUID, chunks_metadata: List[Dict[str, Any]]):
 
 
 def main():
-    """Main application entry point"""
     print("\n" + "=" * 80)
     print("RAG SYSTEM - Enhanced 2026 Edition")
     print("=" * 80)
@@ -306,28 +253,40 @@ def main():
     print(f"  - Embedding model: {config.EMBEDDING_MODEL}")
     print(f"  - LLM: {config.LLM_PROVIDER}/{config.LLM_MODEL}")
     print(f"  - Reranker: {config.RERANKER_MODEL}")
-    print(f"  - Default mode: {config.DEFAULT_MODE}")
     print("=" * 80 + "\n")
     
-    # Get PDF path
+    print("Available Modes:")
+    print("  1. hybrid_quality  - Hybrid Quality-First (Precision, Groundedness, Numeric Accuracy)")
+    print("  2. fast_response   - Fast Response (Speed optimized)")
+    print()
+    
+    mode_choice = input("Select mode (1 or 2) [1]: ").strip() or "1"
+    
+    if mode_choice == "1":
+        selected_mode = "hybrid_quality"
+    elif mode_choice == "2":
+        selected_mode = "fast_response"
+    else:
+        print("Invalid choice, using hybrid_quality")
+        selected_mode = "hybrid_quality"
+    
+    print(f"\n✓ Selected mode: {config.EXPERIMENT_MODES[selected_mode]['name']}\n")
+    
     if len(sys.argv) > 1:
         pdf_path = sys.argv[1]
     else:
         pdf_path = input("Enter PDF path: ").strip()
     
-    # Remove quotes if present
     pdf_path = pdf_path.strip('"').strip("'")
     
-    # Validate file
     if not Path(pdf_path).exists():
         print(f"✗ Error: File not found: {pdf_path}")
-        return
+        return 1
     
     if not pdf_path.lower().endswith('.pdf'):
         print(f"✗ Error: Only PDF files supported: {pdf_path}")
-        return
+        return 1
     
-    # Process document
     print(f"\nProcessing: {pdf_path}")
     print("This may take a minute...\n")
     
@@ -339,8 +298,7 @@ def main():
         print(f"  Document ID: {doc_id}")
         print(f"  Total chunks: {len(chunks_metadata)}")
         
-        # Enter interactive mode
-        interactive_mode(doc_id, chunks_metadata)
+        interactive_mode(doc_id, chunks_metadata, selected_mode)
         
     except Exception as e:
         print(f"\n✗ Error: {str(e)}")

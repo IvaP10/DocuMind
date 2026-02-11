@@ -1,7 +1,3 @@
-"""
-Enhanced Contextual Chunker (2026)
-Improved chunking with semantic boundary preservation
-"""
 from typing import List, Optional, Dict, Any
 from uuid import uuid4
 import tiktoken
@@ -15,61 +11,65 @@ logger = logging.getLogger(__name__)
 
 
 class EnhancedContextualChunker:
-    """
-    Advanced chunking strategy with:
-    - Semantic boundary preservation
-    - Smart parent-child relationships
-    - Configurable overlap strategies
-    - Better handling of tables and special content
-    """
     
     def __init__(self):
-        """Initialize chunker with tokenizer and config"""
         logger.info("Initializing Enhanced Contextual Chunker")
         
-        # Use latest OpenAI tokenizer (o200k_base for GPT-4o/GPT-4)
         self.encoding = tiktoken.get_encoding("o200k_base")
         
-        # Load configuration
         self.parent_size = config.CHUNK_SIZE_PARENT
         self.child_size = config.CHUNK_SIZE_CHILD
         self.overlap = config.CHUNK_OVERLAP
         self.respect_sentences = config.RESPECT_SENTENCE_BOUNDARIES
         self.respect_paragraphs = config.RESPECT_PARAGRAPH_BOUNDARIES
         
+        self._compile_numeric_patterns()
+        
         logger.info(f"Chunk sizes - Parent: {self.parent_size}, Child: {self.child_size}, Overlap: {self.overlap}")
     
-    def create_chunks(self, document_id: str, elements: List[LayoutElement]) -> List[Chunk]:
-        """
-        Create parent and child chunks from layout elements
+    def _compile_numeric_patterns(self):
+        self.numeric_patterns = [
+            (re.compile(r'-?\$?\d{1,3}(?:,\d{3})*(?:\.\d+)?(?:[KMBkmb](?:illion)?)?'), 'number'),
+            (re.compile(r'-?\d+(?:\.\d+)?%'), 'percentage'),
+            (re.compile(r'\b(?:19|20)\d{2}\b'), 'year'),
+            (re.compile(r'\b(?:Q[1-4]|FY)\s*\d{2,4}\b', re.IGNORECASE), 'fiscal_period'),
+            (re.compile(r'\b\d{1,2}[/-]\d{1,2}[/-]\d{2,4}\b'), 'date'),
+        ]
+    
+    def _extract_numbers(self, text: str) -> List[Dict[str, Any]]:
+        numbers = []
+        seen = set()
         
-        Args:
-            document_id: Document identifier
-            elements: List of layout elements from parser
-            
-        Returns:
-            List of all chunks (parents and children)
-        """
+        for pattern, num_type in self.numeric_patterns:
+            for match in pattern.finditer(text):
+                matched_text = match.group(0)
+                if matched_text not in seen:
+                    seen.add(matched_text)
+                    numbers.append({
+                        "value": matched_text,
+                        "type": num_type,
+                        "position": match.start()
+                    })
+        
+        numbers.sort(key=lambda x: x["position"])
+        return numbers
+    
+    def create_chunks(self, document_id: str, elements: List[LayoutElement]) -> List[Chunk]:
         logger.info(f"Creating chunks for document {document_id}")
         logger.info(f"Processing {len(elements)} layout elements")
         
         all_chunks = []
         
-        # Group elements into logical sections for parent chunks
         sections = self._group_into_sections(elements)
         logger.info(f"Created {len(sections)} sections")
         
-        # Process each section
         for section_idx, section in enumerate(sections):
-            # Create parent chunk for this section
             parent_chunk = self._create_parent_chunk(document_id, section, section_idx)
             all_chunks.append(parent_chunk)
             
-            # Create child chunks from this section
             child_chunks = self._create_child_chunks(document_id, parent_chunk, section)
             all_chunks.extend(child_chunks)
         
-        # Log statistics
         parent_count = sum(1 for c in all_chunks if c.is_parent)
         child_count = sum(1 for c in all_chunks if c.is_child)
         logger.info(f"Created {len(all_chunks)} total chunks: {parent_count} parents, {child_count} children")
@@ -77,10 +77,6 @@ class EnhancedContextualChunker:
         return all_chunks
     
     def _group_into_sections(self, elements: List[LayoutElement]) -> List[List[LayoutElement]]:
-        """
-        Group elements into sections for parent chunks
-        Uses semantic boundaries when possible
-        """
         sections = []
         current_section = []
         current_tokens = 0
@@ -88,31 +84,24 @@ class EnhancedContextualChunker:
         for element in elements:
             element_tokens = self._count_tokens(element.content)
             
-            # Check if adding this element would exceed parent size
             would_exceed = current_tokens + element_tokens > self.parent_size
             
-            # Decide whether to start new section
             should_split = False
             
             if would_exceed and current_section:
                 should_split = True
             
-            # Always start new section for tables (keep them atomic when possible)
             if element.element_type == ChunkType.TABLE and current_section:
-                # Only if table fits in parent size
                 if element_tokens <= self.parent_size:
                     should_split = True
             
-            # Start new section for major headers
             if element.element_type == ChunkType.HEADER and current_section:
-                if current_tokens > self.parent_size * 0.5:  # Only if section is substantial
+                if current_tokens > self.parent_size * 0.5:
                     should_split = True
             
             if should_split:
-                # Save current section
                 sections.append(current_section)
                 
-                # Start new section with overlap if configured
                 if self.overlap > 0 and current_section:
                     overlap_elements = self._get_overlap_elements(current_section)
                     current_section = overlap_elements + [element]
@@ -124,21 +113,18 @@ class EnhancedContextualChunker:
                 current_section.append(element)
                 current_tokens += element_tokens
         
-        # Add final section
         if current_section:
             sections.append(current_section)
         
         return sections
     
     def _get_overlap_elements(self, section: List[LayoutElement]) -> List[LayoutElement]:
-        """Get elements from end of section for overlap"""
         if not section:
             return []
         
         overlap_elements = []
         overlap_tokens = 0
         
-        # Take elements from end until we reach overlap size
         for element in reversed(section):
             element_tokens = self._count_tokens(element.content)
             if overlap_tokens + element_tokens > self.overlap:
@@ -154,24 +140,20 @@ class EnhancedContextualChunker:
         section: List[LayoutElement],
         section_idx: int
     ) -> Chunk:
-        """Create a parent chunk from a section of elements"""
         
-        # Combine element texts
         combined_text = self._combine_elements(section)
         
-        # Get metadata from first element
         first_elem = section[0]
         
-        # Collect element types
         element_types = [elem.element_type.value for elem in section]
         
-        # Determine primary chunk type (most common type)
         type_counts = {}
         for elem_type in element_types:
             type_counts[elem_type] = type_counts.get(elem_type, 0) + 1
         primary_type = max(type_counts, key=type_counts.get)
         
-        # Create parent chunk
+        numbers = self._extract_numbers(combined_text)
+        
         parent_chunk = Chunk(
             id=uuid4(),
             document_id=document_id,
@@ -189,7 +171,8 @@ class EnhancedContextualChunker:
                 "element_types": element_types,
                 "pages": list(set(elem.page for elem in section)),
                 "has_table": any(e.element_type == ChunkType.TABLE for e in section),
-                "has_code": any(e.element_type == ChunkType.CODE for e in section)
+                "has_code": any(e.element_type == ChunkType.CODE for e in section),
+                "numbers": numbers,
             }
         )
         
@@ -201,19 +184,16 @@ class EnhancedContextualChunker:
         parent: Chunk, 
         section: List[LayoutElement]
     ) -> List[Chunk]:
-        """Create child chunks from section elements"""
         
         children = []
         
         for elem_idx, element in enumerate(section):
             element_tokens = self._count_tokens(element.content)
             
-            # If element fits in child size, create single child chunk
             if element_tokens <= self.child_size:
                 child = self._create_single_child(document_id, parent, element, elem_idx)
                 children.append(child)
             else:
-                # Element too large, need to split
                 sub_chunks = self._split_large_element(document_id, parent, element, elem_idx)
                 children.extend(sub_chunks)
         
@@ -226,7 +206,8 @@ class EnhancedContextualChunker:
         element: LayoutElement,
         elem_idx: int
     ) -> Chunk:
-        """Create a single child chunk from an element"""
+        
+        numbers = self._extract_numbers(element.content)
         
         return Chunk(
             id=uuid4(),
@@ -242,6 +223,7 @@ class EnhancedContextualChunker:
                 "is_parent": False,
                 "parent_id": str(parent.id),
                 "element_index": elem_idx,
+                "numbers": numbers,
                 **element.metadata
             }
         )
@@ -253,22 +235,20 @@ class EnhancedContextualChunker:
         element: LayoutElement,
         elem_idx: int
     ) -> List[Chunk]:
-        """Split a large element into multiple child chunks"""
         
         chunks = []
         text = element.content
         
-        # For tables, try to split by rows if markdown
         if element.element_type == ChunkType.TABLE and '|' in text:
             sub_chunks = self._split_table(text)
         else:
-            # Split by sentences
             sub_chunks = self._split_by_sentences(text)
         
-        # Create chunks from splits
         for sub_idx, chunk_text in enumerate(sub_chunks):
             if not chunk_text.strip():
                 continue
+            
+            numbers = self._extract_numbers(chunk_text)
             
             chunk = Chunk(
                 id=uuid4(),
@@ -285,6 +265,7 @@ class EnhancedContextualChunker:
                     "parent_id": str(parent.id),
                     "element_index": elem_idx,
                     "sub_index": sub_idx,
+                    "numbers": numbers,
                     **element.metadata
                 }
             )
@@ -293,10 +274,8 @@ class EnhancedContextualChunker:
         return chunks
     
     def _split_table(self, table_text: str) -> List[str]:
-        """Split markdown table into smaller chunks by rows"""
         lines = table_text.split('\n')
         
-        # Find header and separator
         header_lines = []
         data_lines = []
         
@@ -306,7 +285,6 @@ class EnhancedContextualChunker:
             else:
                 data_lines.append(line)
         
-        # Group data rows into chunks
         chunks = []
         current_chunk = header_lines.copy()
         current_tokens = sum(self._count_tokens(line) for line in current_chunk)
@@ -315,23 +293,19 @@ class EnhancedContextualChunker:
             line_tokens = self._count_tokens(line)
             
             if current_tokens + line_tokens > self.child_size and len(current_chunk) > len(header_lines):
-                # Save current chunk
                 chunks.append('\n'.join(current_chunk))
-                # Start new chunk with header
                 current_chunk = header_lines.copy() + [line]
                 current_tokens = sum(self._count_tokens(l) for l in current_chunk)
             else:
                 current_chunk.append(line)
                 current_tokens += line_tokens
         
-        # Add final chunk
         if len(current_chunk) > len(header_lines):
             chunks.append('\n'.join(current_chunk))
         
         return chunks if chunks else [table_text]
     
     def _split_by_sentences(self, text: str) -> List[str]:
-        """Split text into chunks by sentences with overlap"""
         
         sentences = self._split_sentences(text)
         
@@ -345,13 +319,10 @@ class EnhancedContextualChunker:
         for i, sentence in enumerate(sentences):
             sentence_tokens = self._count_tokens(sentence)
             
-            # Check if adding sentence would exceed limit
             if current_tokens + sentence_tokens > self.child_size and current_chunk:
-                # Save current chunk
                 chunk_text = ' '.join(current_chunk)
                 chunks.append(chunk_text)
                 
-                # Start new chunk with overlap (last 1-2 sentences)
                 if self.overlap > 0:
                     overlap_count = min(2, len(current_chunk))
                     overlap_sentences = current_chunk[-overlap_count:] if overlap_count > 0 else []
@@ -364,7 +335,6 @@ class EnhancedContextualChunker:
                 current_chunk.append(sentence)
                 current_tokens += sentence_tokens
         
-        # Add final chunk
         if current_chunk:
             chunk_text = ' '.join(current_chunk)
             chunks.append(chunk_text)
@@ -372,39 +342,26 @@ class EnhancedContextualChunker:
         return chunks
     
     def _combine_elements(self, elements: List[LayoutElement]) -> str:
-        """Combine multiple elements into single text"""
         parts = []
         
         for element in elements:
-            # Add element content
             parts.append(element.content)
         
-        # Join with double newline to preserve structure
         return "\n\n".join(parts)
     
     def _split_sentences(self, text: str) -> List[str]:
-        """
-        Split text into sentences with improved handling
-        Preserves abbreviations and special cases
-        """
-        # Protect abbreviations
         text = re.sub(r'\b(Dr|Mr|Mrs|Ms|Inc|Ltd|Co|Corp|vs|etc|e\.g|i\.e|Jr|Sr|Prof|Rev)\.\s',
                      r'\1<ABBREV> ', text, flags=re.IGNORECASE)
         
-        # Protect numbers with decimals
         text = re.sub(r'(\d+)\.(\d+)', r'\1<DECIMAL>\2', text)
         
-        # Mark sentence boundaries
         text = re.sub(r'([.!?])\s+([A-Z])', r'\1<SENT>\2', text)
         
-        # Restore abbreviation markers and decimals
         text = text.replace('<ABBREV>', '.')
         text = text.replace('<DECIMAL>', '.')
         
-        # Split on sentence markers
         sentences = text.split('<SENT>')
         
-        # Clean and merge very short sentences
         merged = []
         buffer = ""
         
@@ -413,7 +370,6 @@ class EnhancedContextualChunker:
             if not sent:
                 continue
             
-            # Merge very short sentences (< 6 words) with previous
             if len(sent.split()) < 6 and buffer:
                 buffer += " " + sent
             else:
@@ -427,14 +383,11 @@ class EnhancedContextualChunker:
         return [s.strip() for s in merged if s.strip()]
     
     def _count_tokens(self, text: str) -> int:
-        """Count tokens in text using tiktoken"""
         try:
             return len(self.encoding.encode(text))
         except Exception as e:
             logger.debug(f"Token counting failed: {e}, using word-based estimate")
-            # Fallback: estimate tokens as 1.3x word count
             return int(len(text.split()) * 1.3)
 
 
-# Global chunker instance
 chunker = EnhancedContextualChunker()

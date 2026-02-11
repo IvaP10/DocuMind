@@ -1,5 +1,4 @@
-from sentence_transformers import SentenceTransformer
-from typing import List, Dict, Optional, Union, Set
+from typing import List, Dict, Optional, Set
 import numpy as np
 from collections import Counter
 import re
@@ -13,10 +12,8 @@ try:
     import config
 except ImportError:
     class Config:
-        EMBEDDING_MODEL = "sentence-transformers/all-mpnet-base-v2"
-        USE_OPENAI_EMBEDDINGS = False
-        OPENAI_API_KEY = "sk-..."
-        OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
+        OPENAI_API_KEY = ""
+        OPENAI_EMBEDDING_MODEL = "text-embedding-3-large"
         EMBEDDING_BATCH_SIZE = 32
         CACHE_DIR = Path("./cache")
         ENABLE_EMBEDDING_CACHE = True
@@ -27,15 +24,7 @@ logger = logging.getLogger(__name__)
 class EnhancedEmbedder:
     
     def __init__(self):
-        logging.basicConfig(level=logging.INFO)
-        logger.info(f"Loading embedding model: {config.EMBEDDING_MODEL}")
-        
-        if config.USE_OPENAI_EMBEDDINGS:
-            self._init_openai_embedder()
-        else:
-            self._init_sentence_transformer()
-        
-        logger.info(f"Embedding model loaded. Dimension: {self.dimension}")
+        self._init_openai_embedder()
         
         self.k1 = 1.5
         self.b = 0.75
@@ -54,8 +43,6 @@ class EnhancedEmbedder:
         self.cache_dir = config.CACHE_DIR / "embeddings"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.enable_cache = config.ENABLE_EMBEDDING_CACHE
-        
-        logger.info("Embedder initialized successfully")
 
     def _compile_tokenization_assets(self):
         self.re_percent = re.compile(r'(\d+)%')
@@ -74,18 +61,6 @@ class EnhancedEmbedder:
             'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
             'should', 'this', 'that', 'these', 'those', 'it', 'its', 'they', 'them'
         }
-
-    def _init_sentence_transformer(self):
-        try:
-            self.model = SentenceTransformer(config.EMBEDDING_MODEL)
-            self.dimension = self.model.get_sentence_embedding_dimension()
-            self.embedding_type = "sentence_transformer"
-        except Exception as e:
-            logger.error(f"Failed to load model {config.EMBEDDING_MODEL}: {e}")
-            logger.info("Falling back to default model")
-            self.model = SentenceTransformer("sentence-transformers/all-mpnet-base-v2")
-            self.dimension = 768
-            self.embedding_type = "sentence_transformer"
     
     def _init_openai_embedder(self):
         try:
@@ -98,11 +73,10 @@ class EnhancedEmbedder:
                 "text-embedding-3-large": 3072,
                 "text-embedding-ada-002": 1536
             }
-            self.dimension = dimension_map.get(config.OPENAI_EMBEDDING_MODEL, 1536)
-            logger.info(f"Using OpenAI embeddings: {config.OPENAI_EMBEDDING_MODEL}")
+            self.dimension = dimension_map.get(config.OPENAI_EMBEDDING_MODEL, 3072)
         except Exception as e:
             logger.error(f"Failed to initialize OpenAI embeddings: {e}")
-            self._init_sentence_transformer()
+            raise
 
     def embed_texts(
         self, 
@@ -117,27 +91,27 @@ class EnhancedEmbedder:
             batch_size = config.EMBEDDING_BATCH_SIZE
         
         try:
-            if self.embedding_type == "openai":
-                return self._embed_with_openai(texts, batch_size)
-            else:
-                return self._embed_with_sentence_transformer(texts, batch_size, show_progress)
+            return self._embed_with_openai(texts, batch_size)
         except Exception as e:
             logger.error(f"Embedding error: {str(e)}")
             raise
-
-    def _embed_with_sentence_transformer(self, texts: List[str], batch_size: int, show_progress: bool) -> np.ndarray:
-        return self.model.encode(
-            texts,
-            batch_size=batch_size,
-            show_progress_bar=show_progress,
-            convert_to_numpy=True,
-            normalize_embeddings=True
-        )
     
     def _embed_with_openai(self, texts: List[str], batch_size: int) -> np.ndarray:
+        import tiktoken
+        encoding = tiktoken.get_encoding("cl100k_base")
+        max_tokens = 8191
+        
+        truncated_texts = []
+        for text in texts:
+            tokens = encoding.encode(text)
+            if len(tokens) > max_tokens:
+                tokens = tokens[:max_tokens]
+                text = encoding.decode(tokens)
+            truncated_texts.append(text)
+        
         all_embeddings = []
-        for i in range(0, len(texts), batch_size):
-            batch = texts[i:i + batch_size]
+        for i in range(0, len(truncated_texts), batch_size):
+            batch = truncated_texts[i:i + batch_size]
             response = self.openai_client.embeddings.create(
                 model=config.OPENAI_EMBEDDING_MODEL,
                 input=batch
@@ -158,8 +132,6 @@ class EnhancedEmbedder:
         return self.embed_single(query)
 
     def build_bm25_index(self, texts: List[str]):
-        logger.info(f"Building BM25 index for {len(texts)} documents")
-        
         self.doc_lengths = []
         self.doc_freqs = {}
         self.token_to_id = {}
@@ -180,8 +152,6 @@ class EnhancedEmbedder:
                     self.next_token_id += 1
         
         self.avg_doc_length = sum(self.doc_lengths) / self.corpus_size if self.corpus_size > 0 else 0
-        
-        logger.info(f"BM25 index built: N={self.corpus_size}, Vocab={len(self.token_to_id)}")
 
     def create_sparse_vector(self, text: str, mode: str = "query") -> Dict[int, float]:
         if self.corpus_size == 0:
@@ -250,7 +220,7 @@ class EnhancedEmbedder:
                 
         return filtered
 
-    def save_index(self, path: Union[str, Path]):
+    def save_index(self, path: Path):
         path = Path(path)
         data = {
             'vocab': self.token_to_id,
@@ -264,7 +234,7 @@ class EnhancedEmbedder:
             pickle.dump(data, f)
         logger.info(f"Index saved to {path}")
 
-    def load_index(self, path: Union[str, Path]):
+    def load_index(self, path: Path):
         path = Path(path)
         if not path.exists():
             logger.warning("Index file not found")
