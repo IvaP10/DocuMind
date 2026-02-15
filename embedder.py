@@ -6,6 +6,8 @@ import math
 import logging
 from pathlib import Path
 import pickle
+import hashlib
+import json
 from functools import lru_cache
 
 try:
@@ -14,7 +16,8 @@ except ImportError:
     class Config:
         OPENAI_API_KEY = ""
         OPENAI_EMBEDDING_MODEL = "text-embedding-3-large"
-        EMBEDDING_BATCH_SIZE = 32
+        EMBEDDING_BATCH_SIZE = 2048
+        OPENAI_EMBEDDING_MAX_TOKENS_PER_REQUEST = 300000
         CACHE_DIR = Path("./cache")
         ENABLE_EMBEDDING_CACHE = True
     config = Config()
@@ -43,6 +46,9 @@ class EnhancedEmbedder:
         self.cache_dir = config.CACHE_DIR / "embeddings"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.enable_cache = config.ENABLE_EMBEDDING_CACHE
+        
+        import tiktoken
+        self._encoding = tiktoken.get_encoding("cl100k_base")
 
     def _compile_tokenization_assets(self):
         self.re_percent = re.compile(r'(\d+)%')
@@ -78,6 +84,24 @@ class EnhancedEmbedder:
             logger.error(f"Failed to initialize OpenAI embeddings: {e}")
             raise
 
+    def _get_cache_key(self, texts: List[str]) -> str:
+        content = json.dumps(texts, sort_keys=True)
+        return hashlib.sha256(content.encode()).hexdigest()
+
+    def _load_cached_embeddings(self, cache_key: str) -> Optional[np.ndarray]:
+        if not self.enable_cache:
+            return None
+        cache_path = self.cache_dir / f"{cache_key}.npy"
+        if cache_path.exists():
+            return np.load(cache_path)
+        return None
+
+    def _save_cached_embeddings(self, cache_key: str, embeddings: np.ndarray):
+        if not self.enable_cache:
+            return
+        cache_path = self.cache_dir / f"{cache_key}.npy"
+        np.save(cache_path, embeddings)
+
     def embed_texts(
         self, 
         texts: List[str], 
@@ -90,35 +114,73 @@ class EnhancedEmbedder:
         if batch_size is None:
             batch_size = config.EMBEDDING_BATCH_SIZE
         
+        cache_key = self._get_cache_key(texts)
+        cached = self._load_cached_embeddings(cache_key)
+        if cached is not None:
+            return cached
+        
         try:
-            return self._embed_with_openai(texts, batch_size)
+            result = self._embed_with_openai(texts, batch_size)
+            self._save_cached_embeddings(cache_key, result)
+            return result
         except Exception as e:
             logger.error(f"Embedding error: {str(e)}")
             raise
     
     def _embed_with_openai(self, texts: List[str], batch_size: int) -> np.ndarray:
-        import tiktoken
-        encoding = tiktoken.get_encoding("cl100k_base")
-        max_tokens = 8191
+        max_tokens_per_input = 8191
+        max_tokens_per_request = 250000
+        max_items_per_request = 2048
         
+        if batch_size > max_items_per_request:
+            batch_size = max_items_per_request
+            
         truncated_texts = []
         for text in texts:
-            tokens = encoding.encode(text)
-            if len(tokens) > max_tokens:
-                tokens = tokens[:max_tokens]
-                text = encoding.decode(tokens)
+            tokens = self._encoding.encode(text)
+            if len(tokens) > max_tokens_per_input:
+                tokens = tokens[:max_tokens_per_input]
+                text = self._encoding.decode(tokens)
             truncated_texts.append(text)
+            
+        token_counts = [len(self._encoding.encode(t)) for t in truncated_texts]
         
+        batches = []
+        current_batch = []
+        current_tokens = 0
+        
+        for i, (text, tc) in enumerate(zip(truncated_texts, token_counts)):
+
+            if (current_tokens + tc > max_tokens_per_request) or (len(current_batch) >= batch_size):
+                if current_batch:
+                    batches.append(current_batch)
+                    current_batch = []
+                    current_tokens = 0
+            
+            current_batch.append(text)
+            current_tokens += tc
+            
+        if current_batch:
+            batches.append(current_batch)
+            
         all_embeddings = []
-        for i in range(0, len(truncated_texts), batch_size):
-            batch = truncated_texts[i:i + batch_size]
-            response = self.openai_client.embeddings.create(
-                model=config.OPENAI_EMBEDDING_MODEL,
-                input=batch
-            )
-            batch_embeddings = [item.embedding for item in response.data]
-            all_embeddings.extend(batch_embeddings)
+        logger.info(f"Embedding {len(texts)} texts in {len(batches)} batches.")
         
+        for i, batch in enumerate(batches):
+            batch_tokens = sum(len(self._encoding.encode(t)) for t in batch)
+            logger.info(f"Batch {i+1}/{len(batches)}: {len(batch)} items, {batch_tokens} tokens")
+            
+            try:
+                response = self.openai_client.embeddings.create(
+                    model=config.OPENAI_EMBEDDING_MODEL,
+                    input=batch
+                )
+                batch_embeddings = [item.embedding for item in response.data]
+                all_embeddings.extend(batch_embeddings)
+            except Exception as e:
+                logger.error(f"Error in batch {i+1}: {e}")
+                raise
+                
         embeddings = np.array(all_embeddings, dtype=np.float32)
         norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
         norms[norms == 0] = 1e-10
@@ -232,12 +294,10 @@ class EnhancedEmbedder:
         }
         with open(path, 'wb') as f:
             pickle.dump(data, f)
-        logger.info(f"Index saved to {path}")
 
     def load_index(self, path: Path):
         path = Path(path)
         if not path.exists():
-            logger.warning("Index file not found")
             return
             
         with open(path, 'rb') as f:
@@ -249,6 +309,5 @@ class EnhancedEmbedder:
         self.avg_doc_length = data['stats']['avg_len']
         self.corpus_size = data['stats']['corpus_size']
         self.next_token_id = len(self.token_to_id)
-        logger.info(f"Index loaded. Vocab size: {len(self.token_to_id)}")
 
 embedder = EnhancedEmbedder()

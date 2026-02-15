@@ -24,35 +24,22 @@ logger = logging.getLogger(__name__)
 class EnhancedVectorDatabase:
     
     def __init__(self):
-        try:
-            if config.QDRANT_API_KEY:
-                self.client = QdrantClient(
-                    url=f"https://{config.QDRANT_HOST}",
-                    api_key=config.QDRANT_API_KEY
-                )
-            else:
-                self.client = QdrantClient(
-                    host=config.QDRANT_HOST,
-                    port=config.QDRANT_PORT,
-                    timeout=60
-                )
-            
-            self.collection_name = config.QDRANT_COLLECTION
-            self.embedding_dimension = config.EMBEDDING_DIMENSION
-            
-            self._ensure_collection()
-            
-        except Exception as e:
-            if config.QDRANT_HOST != ":memory:":
-                try:
-                    self.client = QdrantClient(":memory:")
-                    self.collection_name = config.QDRANT_COLLECTION
-                    self.embedding_dimension = config.EMBEDDING_DIMENSION
-                    self._ensure_collection()
-                except Exception as e2:
-                    raise RuntimeError("Cannot initialize vector database") from e
-            else:
-                raise
+        if config.QDRANT_API_KEY:
+            self.client = QdrantClient(
+                url=f"https://{config.QDRANT_HOST}",
+                api_key=config.QDRANT_API_KEY
+            )
+        else:
+            self.client = QdrantClient(
+                host=config.QDRANT_HOST,
+                port=config.QDRANT_PORT,
+                timeout=60
+            )
+        
+        self.collection_name = config.QDRANT_COLLECTION
+        self.embedding_dimension = config.EMBEDDING_DIMENSION
+        
+        self._ensure_collection()
     
     def _ensure_collection(self):
         try:
@@ -64,6 +51,13 @@ class EnhancedVectorDatabase:
                 
         except Exception as e:
             raise
+
+    def reset_collection(self):
+        try:
+            self.client.delete_collection(self.collection_name)
+        except Exception:
+            pass
+        self._create_collection()
     
     def _create_collection(self):
         self.client.create_collection(
@@ -155,6 +149,7 @@ class EnhancedVectorDatabase:
                 "page_number": chunk.page_number,
                 "bbox": chunk.bbox.dict() if chunk.bbox else None,
                 "token_count": chunk.token_count,
+                "source_filename": chunk.metadata.get("source_filename", "unknown"),
                 "metadata": chunk.metadata
             }
         )
@@ -165,7 +160,7 @@ class EnhancedVectorDatabase:
         self,
         dense_embedding: np.ndarray,
         sparse_vector: Dict[int, float],
-        document_id: UUID,
+        document_id: Optional[UUID] = None,
         top_k: int = 50,
         use_dense: bool = True,
         use_sparse: bool = True,
@@ -204,15 +199,18 @@ class EnhancedVectorDatabase:
     
     def _build_filter(
         self,
-        document_id: UUID,
+        document_id: Optional[UUID] = None,
         metadata_filter: Optional[Dict[str, Any]] = None
-    ) -> Filter:
-        conditions = [
-            FieldCondition(
-                key="document_id",
-                match=MatchValue(value=str(document_id))
+    ) -> Optional[Filter]:
+        conditions = []
+        
+        if document_id is not None:
+            conditions.append(
+                FieldCondition(
+                    key="document_id",
+                    match=MatchValue(value=str(document_id))
+                )
             )
-        ]
         
         if metadata_filter:
             for key, value in metadata_filter.items():
@@ -223,7 +221,7 @@ class EnhancedVectorDatabase:
                     )
                 )
         
-        return Filter(must=conditions)
+        return Filter(must=conditions) if conditions else None
     
     def _dense_search(
         self,
@@ -352,6 +350,7 @@ class EnhancedVectorDatabase:
                 "chunk_type": result.payload["chunk_type"],
                 "format_type": result.payload.get("format_type", "plain"),
                 "page_number": result.payload["page_number"],
+                "source_filename": result.payload.get("source_filename", "unknown"),
                 "bbox": result.payload.get("bbox"),
                 "token_count": result.payload.get("token_count", 0),
                 "score": float(result.score) if hasattr(result, 'score') else 0.0,
@@ -383,9 +382,9 @@ class EnhancedVectorDatabase:
     
     def hybrid_search(
         self,
-        document_id: UUID,
-        dense_vector: np.ndarray,
-        sparse_vector: Dict[int, float],
+        document_id: Optional[UUID] = None,
+        dense_vector: np.ndarray = None,
+        sparse_vector: Dict[int, float] = None,
         limit: int = 50,
         dense_weight: float = 0.65,
         sparse_weight: float = 0.35
@@ -396,8 +395,8 @@ class EnhancedVectorDatabase:
     
     def dense_search(
         self,
-        document_id: UUID,
-        dense_vector: np.ndarray,
+        document_id: Optional[UUID] = None,
+        dense_vector: np.ndarray = None,
         limit: int = 50
     ) -> List[Dict[str, Any]]:
         query_filter = self._build_filter(document_id)
@@ -406,8 +405,8 @@ class EnhancedVectorDatabase:
     
     def sparse_search(
         self,
-        document_id: UUID,
-        sparse_vector: Dict[int, float],
+        document_id: Optional[UUID] = None,
+        sparse_vector: Dict[int, float] = None,
         limit: int = 50
     ) -> List[Dict[str, Any]]:
         query_filter = self._build_filter(document_id)

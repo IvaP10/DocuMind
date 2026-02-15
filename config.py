@@ -26,9 +26,9 @@ CHUNK_OVERLAP = int(os.getenv("CHUNK_OVERLAP", 75))
 RESPECT_SENTENCE_BOUNDARIES = os.getenv("RESPECT_SENTENCE_BOUNDARIES", "true").lower() == "true"
 RESPECT_PARAGRAPH_BOUNDARIES = os.getenv("RESPECT_PARAGRAPH_BOUNDARIES", "true").lower() == "true"
 
-TOP_K_INITIAL = int(os.getenv("TOP_K_INITIAL", 20))
-TOP_K_RERANK = int(os.getenv("TOP_K_RERANK", 8))
-MAX_CONTEXT_TOKENS = int(os.getenv("MAX_CONTEXT_TOKENS", 2500))
+TOP_K_INITIAL = int(os.getenv("TOP_K_INITIAL", 30))
+TOP_K_RERANK = int(os.getenv("TOP_K_RERANK", 15))
+MAX_CONTEXT_TOKENS = int(os.getenv("MAX_CONTEXT_TOKENS", 4000))
 
 DYNAMIC_THRESHOLD_PERCENTILE = float(os.getenv("DYNAMIC_THRESHOLD_PERCENTILE", 0.70))
 DYNAMIC_THRESHOLD_MULTIPLIER = float(os.getenv("DYNAMIC_THRESHOLD_MULTIPLIER", 0.7))
@@ -59,7 +59,8 @@ if "EMBEDDING_DIMENSION" in os.environ:
 else:
     EMBEDDING_DIMENSION = EMBEDDING_MODEL_DIMENSIONS.get(EMBEDDING_MODEL, 3072)
 
-EMBEDDING_BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", 32))
+EMBEDDING_BATCH_SIZE = int(os.getenv("EMBEDDING_BATCH_SIZE", 2048))
+OPENAI_EMBEDDING_MAX_TOKENS_PER_REQUEST = int(os.getenv("OPENAI_EMBEDDING_MAX_TOKENS_PER_REQUEST", 300000))
 
 OPENAI_EMBEDDING_MODEL = os.getenv("OPENAI_EMBEDDING_MODEL", "text-embedding-3-large")
 
@@ -67,7 +68,7 @@ RERANKER_MODEL = os.getenv("RERANKER_MODEL", "cross-encoder/ms-marco-MiniLM-L-6-
 
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-4o-mini")
 LLM_TEMPERATURE = float(os.getenv("LLM_TEMPERATURE", 0.0))
-LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", 2000))
+LLM_MAX_TOKENS = int(os.getenv("LLM_MAX_TOKENS", 800))
 
 ABSTENTION_THRESHOLD = float(os.getenv("ABSTENTION_THRESHOLD", 0.20))
 
@@ -87,15 +88,15 @@ MODE = {
     "apply_score_threshold": False,
     "dynamic_threshold": False,
     "use_query_rewriting": False,
-    "use_mmr": True,
+    "use_mmr": False,
     "mmr_lambda": 0.8,
     "adaptive_threshold": False,
     "min_rerank_score": 0.08,
     "dedup_method": "fast",
     "dedup_threshold": 0.90,
     "context_strategy": "child_with_parent_context",
-    "top_k_initial": 20,
-    "top_k_rerank": 8,
+    "top_k_initial": 30,
+    "top_k_rerank": 15,
     "abstention_enabled": False,
     "atomic_fact_verification": True,
     "hallucination_penalty": 0.98,

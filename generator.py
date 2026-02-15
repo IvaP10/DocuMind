@@ -5,6 +5,7 @@ import logging
 import json
 import re
 import math
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -26,15 +27,16 @@ class EnhancedGenerator:
             return self._no_context_response()
 
         retrieval_confidence = self._calc_retrieval_confidence(sources, metrics)
-
         answer = self._generate(query, context)
-
         numeric_verification = self._verify_numeric_accuracy(answer, context)
-        combined_verification = self._combined_verification(query, answer, context)
+
+        with ThreadPoolExecutor(max_workers=1) as ex:
+            verify_future = ex.submit(self._combined_verification, query, answer, context)
+            citation_metrics = self._analyze_citations(answer, context)
+            combined_verification = verify_future.result()
 
         verification = combined_verification.get("answer_verification", {"verified": True, "reason": "default"})
         atomic_verification = combined_verification.get("atomic_verification", {"support_rate": 1.0, "atomic_facts": [], "supported": []})
-        citation_metrics = self._analyze_citations(answer, context)
 
         confidence = self._calc_confidence(verification, atomic_verification, len(sources), citation_metrics, retrieval_confidence, numeric_verification)
 
@@ -51,27 +53,22 @@ class EnhancedGenerator:
         }
 
     def _generate(self, query: str, context: str) -> str:
-        system = """You are a precise document analyst. Answer questions using ONLY information from the provided context.
+        system = """You are a precise document analyst answering from a multi-document knowledge base. Answer questions using ONLY the provided context.
 
-MANDATORY FORMAT RULES:
-1. Every single sentence in your answer MUST end with a page citation in (Page X) format
-2. For factual claims, include the exact quote from context in quotation marks before the citation
-3. Use exact numbers, dates, names, and statistics as they appear in the context
-4. Never infer or add information not in the context
-5. If information is missing, state: "The context does not contain this information"
-6. If sources conflict, present both with their page references
-
-Example format:
-"The company's revenue was $2.5 billion" (Page 3). This represents a significant increase over the prior year (Page 3)."""
+RULES:
+1. Give a complete, focused answer using the exact facts from the context. Cover all relevant aspects but avoid unnecessary filler.
+2. Use exact numbers, names, dates, formulas, and statistics as they appear.
+3. You MUST cite the specific Source File and Page Number for every fact used, using the format [[Source: filename | Page: N]].
+4. If documents conflict (e.g., File A says 'X' but File B says 'Y'), explicitly mention the conflict and attribute each claim to its source.
+5. Never add information not in the context.
+6. If the context lacks the answer, say: "The context does not contain this information.\""""
 
         user = f"""CONTEXT:
 {context}
 
 QUESTION: {query}
 
-IMPORTANT: Every sentence MUST include a (Page X) citation. No sentence should lack a page reference. Use direct quotes for key facts.
-
-ANSWER:"""
+Answer completely with [[Source: filename | Page: N]] citations for every fact."""
 
         resp = self.client.chat.completions.create(
             model=self.model,
@@ -85,13 +82,10 @@ ANSWER:"""
         try:
             resp = self.client.chat.completions.create(
                 model="gpt-4o-mini",
-                max_tokens=600,
+                max_tokens=300,
                 temperature=0.0,
                 response_format={"type": "json_object"},
-                messages=[{"role": "user", "content": f"""Perform two tasks on this answer:
-
-TASK 1 - Answer Verification: Is the answer fully supported by the context?
-TASK 2 - Atomic Fact Verification: Extract each atomic fact from the answer and check if it is supported by the context.
+                messages=[{"role": "user", "content": f"""Verify this answer against the context.
 
 CONTEXT:
 {context[:2500]}
@@ -99,11 +93,8 @@ CONTEXT:
 ANSWER:
 {answer}
 
-Return JSON with:
-- answer_verification: {{"verified": true/false, "reason": "brief explanation"}}
-- atomic_verification: {{"facts": ["fact1", "fact2", ...], "supported": [true, false, ...]}}
-
-JSON:"""}]
+Return JSON:
+{{"answer_verification": {{"verified": true/false, "reason": "brief"}}, "atomic_verification": {{"facts": ["fact1", ...], "supported": [true, ...]}}}}"""}]
             )
             result = json.loads(resp.choices[0].message.content.strip())
 
@@ -137,7 +128,8 @@ JSON:"""}]
         return {"verified": overlap > 0.7, "reason": f"Word overlap: {overlap:.2%}"}
 
     def _verify_numeric_accuracy(self, answer: str, context: str) -> Dict[str, Any]:
-        answer_nums = self._extract_numbers(answer)
+        clean_answer = re.sub(r'\[\[Source:.*?\]\]|\(Page\s+\d+\)|\[Page\s+\d+\]', '', answer, flags=re.IGNORECASE)
+        answer_nums = self._extract_numbers(clean_answer)
         context_nums = self._extract_numbers(context)
         if not answer_nums:
             return {"passed": True, "mismatches": []}
@@ -160,9 +152,9 @@ JSON:"""}]
     def _analyze_citations(self, answer: str, context: str) -> Dict[str, Any]:
         claims = [s for s in re.split(r'(?<=[.!?])\s+', answer) if s.strip() and self._is_factual(s)]
         if not claims:
-            return {"citation_recall": 1.0, "citation_precision": 1.0, "citation_f1": 1.0, "total_claims": 0, "supported_claims": 0, "unsupported_claims": [], "hallucinated_sentences": []}
+            return {"citation_recall": 0.0, "citation_precision": 0.0, "citation_f1": 0.0, "total_claims": 0, "supported_claims": 0, "unsupported_claims": [], "hallucinated_sentences": []}
 
-        page_re = re.compile(r'\[page\s+\d+\]|\(page\s+\d+\)|page\s+\d+|p\.\s*\d+|\[p\.\s*\d+\]', re.IGNORECASE)
+        page_re = re.compile(r'\[\[Source:.*?\]\]|\[page\s+\d+\]|\(page\s+\d+\)|page\s+\d+|p\.\s*\d+|\[p\.\s*\d+\]', re.IGNORECASE)
         supported, unsupported, hallucinated = [], [], []
 
         for claim in claims:
@@ -198,13 +190,21 @@ JSON:"""}]
         return True
 
     def _claim_in_context(self, claim: str, context: str) -> bool:
-        clean = re.sub(r'\[.*?\]|\(.*?\)', '', claim).lower()
+        clean = re.sub(r'\[\[.*?\]\]|\[.*?\]|\(.*?\)', '', claim).lower()
         clean = re.sub(r'(page \d+|p\.\s*\d+)', '', clean)
-        words = [w for w in clean.split() if len(w) > 3]
-        if not words:
-            return True
+        words = [w for w in clean.split() if len(w) > 2]
+        if len(words) < 2:
+            return False
         ctx = context.lower()
-        return sum(1 for w in words if w in ctx) / len(words) > 0.50
+
+        unigram_hits = sum(1 for w in words if w in ctx)
+        unigram_ratio = unigram_hits / len(words)
+
+        bigrams = [f"{words[i]} {words[i+1]}" for i in range(len(words) - 1)]
+        bigram_hits = sum(1 for bg in bigrams if bg in ctx)
+        bigram_ratio = bigram_hits / len(bigrams) if bigrams else 0.0
+
+        return bigram_ratio >= 0.2 or unigram_ratio >= 0.5
 
     def _calc_retrieval_confidence(self, sources: List[Dict], metrics: Dict) -> float:
         if not sources:
@@ -224,7 +224,7 @@ JSON:"""}]
         conf = (w["verification_weight"] * v_score + w["source_quality_weight"] * src_q + w["citation_quality_weight"] * cit_score + w["retrieval_confidence_weight"] * retrieval_c)
         conf *= atomic.get("support_rate", 1.0)
         if not numeric.get("passed", True):
-            conf *= 0.7
+            conf *= 0.85
         hallucinated = citations.get("hallucinated_sentences", [])
         if hallucinated:
             penalty = config.MODE.get("hallucination_penalty", 0.98)

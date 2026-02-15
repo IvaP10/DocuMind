@@ -36,20 +36,21 @@ class EnhancedRetriever:
 
     def _get_adaptive_weights(self, query: str) -> Tuple[float, float]:
         q = query.lower()
-        keyword_score = sum(1 for kw in ['specific','code','number','id','exact','name','date','year','percentage','dollar','price'] if kw in q)
-        conceptual_score = sum(1 for kw in ['how','why','what is','explain','describe','summary','overview','concept','understand'] if kw in q)
         has_numbers = bool(re.search(r'\d', query))
-        if has_numbers or keyword_score > conceptual_score:
-            return 0.3, 0.7
-        return 0.8, 0.2
+        exact_keywords = sum(1 for kw in ['code','number','id','exact','name','date','year','price','url','github','parameter'] if kw in q)
+        semantic_keywords = sum(1 for kw in ['how','why','what is','explain','describe','summary','overview','concept','purpose','role'] if kw in q)
 
-    def retrieve_context(self, document_id: UUID, query: str, chunks_metadata: List[Dict[str, Any]]) -> Dict[str, Any]:
+        if has_numbers or exact_keywords > semantic_keywords:
+            return 0.4, 0.6
+        return config.DENSE_WEIGHT, config.SPARSE_WEIGHT
+
+    def retrieve_context(self, query: str, chunks_metadata: List[Dict[str, Any]], document_id: Optional[UUID] = None) -> Dict[str, Any]:
         start_time = time.time()
         exp = config.MODE
 
         query_numbers = self._extract_query_numbers(query)
 
-        candidates, query_embedding = self._hybrid_search(document_id, query)
+        candidates = self._hybrid_search(query, document_id)
 
         if not candidates:
             return self._empty_context()
@@ -61,15 +62,13 @@ class EnhancedRetriever:
 
         candidates, rerank_scores = self._adaptive_rerank_filter(candidates, rerank_scores)
 
-        candidates = self._apply_mmr(query_embedding, candidates, exp["mmr_lambda"])
-
         candidates = self._deduplicate_fast(candidates, exp["dedup_threshold"])
 
-        context_data = self._build_context(candidates, chunks_metadata, rerank_scores)
+        context_data = self._build_context(candidates, chunks_metadata, rerank_scores[:len(candidates)])
         context_data["metrics"]["retrieval_time_ms"] = (time.time() - start_time) * 1000
         return context_data
 
-    def _hybrid_search(self, document_id: UUID, query: str) -> Tuple[List[Dict[str, Any]], np.ndarray]:
+    def _hybrid_search(self, query: str, document_id: Optional[UUID] = None) -> List[Dict[str, Any]]:
         dense_w, sparse_w = self._get_adaptive_weights(query)
 
         with ThreadPoolExecutor(max_workers=2) as ex:
@@ -84,7 +83,7 @@ class EnhancedRetriever:
             dense_res = f_ds.result()
             sparse_res = f_ss.result()
 
-        return self._fuse_results(dense_res, sparse_res, dense_w, sparse_w), dense_emb
+        return self._fuse_results(dense_res, sparse_res, dense_w, sparse_w)
 
     def _fuse_results(self, dense: List, sparse: List, dw: float, sw: float) -> List[Dict[str, Any]]:
         k = config.RRF_K_PARAM
@@ -134,33 +133,13 @@ class EnhancedRetriever:
         if not scores:
             return candidates, scores
         mean = np.mean(scores)
-        filtered = [(c, s) for c, s in zip(candidates, scores) if s >= mean]
-        if not filtered:
-            return candidates[:3], scores[:3]
+        std = np.std(scores)
+        threshold = mean - 0.5 * std
+        filtered = [(c, s) for c, s in zip(candidates, scores) if s >= threshold]
+        if len(filtered) < 3:
+            return candidates[:5], scores[:5]
         fc, fs = zip(*filtered)
         return list(fc), list(fs)
-
-    def _apply_mmr(self, query_embedding: np.ndarray, candidates: List[Dict], lam: float) -> List[Dict]:
-        if len(candidates) <= 1:
-            return candidates
-        doc_embs = embedder.embed_texts([c["text"] for c in candidates])
-        selected = [0]
-        remaining = list(range(1, len(candidates)))
-        while remaining:
-            best_score = -float('inf')
-            best_idx = None
-            for idx in remaining:
-                rel = float(np.dot(query_embedding, doc_embs[idx]))
-                max_sim = max(float(np.dot(doc_embs[idx], doc_embs[s])) for s in selected)
-                mmr = lam * rel - (1 - lam) * max_sim
-                if mmr > best_score:
-                    best_score = mmr
-                    best_idx = idx
-            if best_idx is None:
-                break
-            selected.append(best_idx)
-            remaining.remove(best_idx)
-        return [candidates[i] for i in selected]
 
     def _deduplicate_fast(self, candidates: List[Dict], threshold: float) -> List[Dict]:
         if not candidates:
@@ -211,25 +190,27 @@ class EnhancedRetriever:
                 expanded = meta["text"]
 
             page = meta.get("page_number", 1)
-            context_parts.append(f"[Page {page}]\n{expanded}")
-            sources.append({"chunk_id": cid, "text": expanded, "page": page, "score": candidate.get("rerank_score", candidate.get("score", 0.0))})
+            source = candidate.get("source_filename", meta.get("metadata", {}).get("source_filename", "unknown"))
+            context_parts.append(f"[[Source: {source} | Page: {page}]]\n{expanded}")
+            sources.append({"chunk_id": cid, "text": expanded, "page": page, "source_filename": source, "score": candidate.get("rerank_score", candidate.get("score", 0.0))})
             total_tokens += meta.get("token_count", len(expanded.split()))
             if total_tokens >= config.MAX_CONTEXT_TOKENS:
                 break
 
-        avg_r = float(np.mean(rerank_scores)) if rerank_scores else 0.0
+        all_scores = [c.get("rerank_score", c.get("score", 0.0)) for c in candidates]
+        avg_r = float(np.mean(all_scores)) if all_scores else 0.0
         return {
             "context": "\n\n".join(context_parts),
             "sources": sources,
             "total_tokens": total_tokens,
             "retrieved_chunks": candidates,
-            "rerank_scores": rerank_scores,
+            "rerank_scores": all_scores,
             "metrics": {
                 "total_candidates": len(candidates),
                 "final_chunks": len(candidates),
                 "avg_rerank_score": avg_r,
-                "max_rerank_score": float(max(rerank_scores)) if rerank_scores else 0.0,
-                "min_rerank_score": float(min(rerank_scores)) if rerank_scores else 0.0,
+                "max_rerank_score": float(max(all_scores)) if all_scores else 0.0,
+                "min_rerank_score": float(min(all_scores)) if all_scores else 0.0,
             }
         }
 
