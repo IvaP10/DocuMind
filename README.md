@@ -213,8 +213,3 @@ pydantic>=2.0.0
 - BM25 index rebuilds on every ingestion run — incremental updates not supported
 - Single collection — collection is reset on each ingestion
 
----
-
-## License
-
-MIT
