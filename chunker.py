@@ -3,7 +3,7 @@ from uuid import uuid4
 import tiktoken
 import re
 from models import Chunk, ChunkType, FormatType
-from parser import LayoutElement
+from pdf_parser import LayoutElement
 import config
 import logging
 

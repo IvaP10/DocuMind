@@ -5,7 +5,7 @@ import sys
 import time
 from typing import Dict, Any, List, Optional
 
-from parser import parser
+from pdf_parser import parser
 from chunker import chunker
 from embedder import embedder
 from database import vector_db

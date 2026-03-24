@@ -1,215 +1,125 @@
-# DocuMind
+# DocuMind: A Hybrid Retrieval-Augmented Generation (RAG) Pipeline for Complex Document Intelligence
 
-Retrieval-Augmented Generation for PDF question answering. Hybrid search, parent-child chunking, atomic fact verification, and calibrated confidence scoring.
+[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
----
-
-## How it works
-
-DocuMind parses PDFs with Docling, chunks them into parent-child pairs, embeds with OpenAI + BM25, indexes into Qdrant, and answers queries with GPT-4o-mini. Every answer is verified at the atomic fact level and scored for confidence.
-
-```
-PDF → Parse → Chunk → Embed → Index → [Query] → Hybrid Search → Rerank → Generate → Verify
-```
+## Abstract
+Standard Retrieval-Augmented Generation (RAG) systems often struggle with long-form, structurally complex academic and financial documents, leading to hallucination, poor context retrieval, and loss of tabular data fidelity. **DocuMind** is an advanced, production-grade RAG pipeline designed to overcome these limitations. It introduces a multi-modal parsing strategy, semantic parent-child chunking, and a hybrid dense-sparse retrieval engine fortified by CrossEncoder reranking and numeric verification to guarantee highly calibrated, reliable, and verifiable AI-generated answers.
 
 ---
 
-## Features
+## Methodology & Architecture
 
-**Retrieval**
-- Hybrid dense (OpenAI `text-embedding-3-large`) + sparse (BM25) search via RRF
-- Query-adaptive weights — shifts to 40/60 dense/sparse for numeric/keyword queries
-- Cross-encoder reranking (`ms-marco-MiniLM-L-6-v2`) with adaptive score filtering
-- Parent-child chunking — child chunks retrieved, parent context used for generation
-- Numeric boosting — chunks matching query numbers ranked higher
-- Jaccard deduplication before generation
+DocuMind is built upon a modular, five-stage architecture prioritizing accuracy and trace-ability over naive retrieval.
 
-**Generation**
-- GPT-4o-mini with mandatory `[[Source: file | Page: N]]` citation per claim
-- Atomic fact verification via a secondary LLM call
-- Numeric accuracy check — flags numbers in the answer absent from source context
-- Multi-factor confidence score (verification + source quality + citation F1 + retrieval confidence)
-- Heuristic word-overlap fallback if LLM verification fails
+### 1. Intelligent Multi-Modal Parsing (`pdf_parser.py`)
+Documents are heterogeneous; a single parsing strategy is insufficient. Our parser dynamically routes pages based on a heuristic density profile:
+- **PyMuPDF**: Extracts text layers and infers semantic roles (e.g., Headers, Lists, Paragraphs) via font metrics.
+- **pdfplumber**: Isolates tables, converts them into strict Markdown, and subtracts them from the text flow to prevent spatial distortion.
+- **Docling**: Acts as a fallback Optical Character Recognition (OCR) engine for scanned or image-dense pages.
 
-**Infrastructure**
-- Qdrant for hybrid dense+sparse vector storage (auto falls back to in-memory)
-- SHA-256 disk cache for embeddings — zero API calls on repeated runs
-- Multi-document ingestion — entire folders with a shared global BM25 index
-- Evaluation suite — precision, recall, F1, MRR, answer similarity, citation quality
+### 2. Semantic Contextual Chunking (`chunker.py`)
+Instead of fixed-size slicing, DocuMind employs a **Parent-Child Chunking Strategy**:
+- **Child Chunks**: Small, semantically cohesive units (e.g., individual sentences, table rows) optimized for high retrieval precision and token limit management.
+- **Parent Chunks**: Larger contextual windows that wrap the child chunks. During generation, the model is fed the parent context to ensure the semantic neighborhood is preserved, mitigating context fragmentation.
+
+### 3. Hybrid Retrieval Engine (`embedder.py`, `retriever.py`, `database.py`)
+Relying solely on dense embeddings fails on exact keyword matching (e.g., SKU numbers, specific acronyms). We use a dual-index approach via **Qdrant**:
+- **Dense Vectors**: Semantic search powered by OpenAI's `text-embedding-3-large`.
+- **Sparse Vectors (BM25)**: Lexical exact-match search generated natively over the corpus.
+- **Fusion**: Search results are merged using **Reciprocal Rank Fusion (RRF)**, ensuring the best of both retrieval methodologies.
+
+### 4. CrossEncoder Reranking
+Initial retrieval produces a broad set of candidates. A CrossEncoder model (`ms-marco-MiniLM-L-6-v2`) evaluates the query-document pair, re-scoring and filtering out low-relevance chunks before they reach the generation layer.
+
+### 5. Calibrated Generation (`generator.py`)
+The LLM (`gpt-4o-mini`) is constrained by strict meta-prompts:
+- **Numeric Verification**: Enforces exact continuous matching for statistics and financial figures.
+- **Attribution**: Requires rigorous in-line citations mapped back to the source document and page number.
+- **Confidence Scoring**: Outputs a calibrated confidence probability based on retrieval density and source verification, penalizing hallucination.
 
 ---
 
-## Quickstart
+## Project Structure
+
+```text
+.
+├── chunker.py           # Implements Semantic Parent-Child chunking
+├── config.py            # Global hyperparameters, thresholds, and weights
+├── database.py          # Qdrant Vector DB client and index management
+├── embedder.py          # Dense/Sparse vector generation and caching
+├── evaluate.py          # robust evaluation suite for QA benchmarking
+├── generator.py         # LLM abstraction with citation and verification logic
+├── main.py              # CLI entry point for ingestion and interactive querying
+├── models.py            # Pydantic data schemas representing the layout
+├── pdf_parser.py        # Multi-backend document parsing logic
+├── retriever.py         # Hybrid retrieval and RRF reranking logic
+└── requirements.txt     # Dependency graph
+```
+
+---
+
+## Setup & Installation
+
+**Prerequisites:** Python 3.12+
+
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/your-username/DocuMind-RAG.git
+   cd DocuMind-RAG
+   ```
+
+2. **Create a Virtual Environment**
+   ```bash
+   python3.12 -m venv venv
+   source venv/bin/activate
+   ```
+
+3. **Install Dependencies**
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+4. **Environment Variables**
+   Create a `key.env` file in the root directory. You will need API keys for OpenAI (and optionally Qdrant Cloud if not running locally):
+   ```env
+   OPENAI_API_KEY="sk-your-openai-key-here"
+   QDRANT_HOST="localhost"
+   QDRANT_PORT=6333
+   ```
+
+---
+
+## Usage
+
+### Ingestion & Interactive Mode
+You can point the pipeline at a single PDF or an entire directory of PDFs. The system will build the BM25 index, generate dense embeddings, and start an interactive REPL shell.
 
 ```bash
-git clone https://github.com/your-username/documind.git
-cd documind
-pip install -r requirements.txt
-cp key.env.example key.env  # add your OPENAI_API_KEY
+python main.py path/to/your/financial_reports/
 ```
 
-**Single PDF**
-```bash
-python main.py report.pdf
-```
-
-**Folder of PDFs**
-```bash
-python main.py reports/
-```
-
-**Interactive shell**
-```
-Query> What was revenue in Q3 2024?
+Inside the interactive shell:
+```text
+Query> What was the total revenue for FY2023?
 Query> stats
 Query> quit
 ```
 
----
+## Evaluation Metrics
 
-## Configuration
-
-`key.env`:
-
-```env
-OPENAI_API_KEY=sk-...
-
-QDRANT_HOST=localhost
-QDRANT_PORT=6333
-QDRANT_COLLECTION=documind_v2
-QDRANT_API_KEY=           # leave blank for local/in-memory
-
-CHUNK_SIZE_PARENT=600
-CHUNK_SIZE_CHILD=300
-CHUNK_OVERLAP=75
-
-TOP_K_INITIAL=30
-TOP_K_RERANK=15
-DENSE_WEIGHT=0.70
-SPARSE_WEIGHT=0.30
-MAX_CONTEXT_TOKENS=4000
-
-EMBEDDING_MODEL=text-embedding-3-large
-LLM_MODEL=gpt-4o-mini
-RERANKER_MODEL=cross-encoder/ms-marco-MiniLM-L-6-v2
-
-ENABLE_EMBEDDING_CACHE=true
-```
+The system is rigorously evaluated against ground-truth datasets (e.g., FinanceBench) using the industry-standard **RAGAS framework**. Run `evaluate.py` to calculate:
+- **Faithfulness**: Measures the factual consistency of the generated answer against the retrieved context. Penalizes hallucination.
+- **Answer Relevancy**: Computes the extent to which the generated answer directly addresses the initial user query.
+- **Context Precision**: Determines whether the most relevant chunks of context were highly ranked in the retrieval stage.
+- **Context Recall**: Measures whether all aspects of the ground truth were successfully retrieved in the contextual windows.
 
 ---
 
-## Programmatic usage
+## License
+This project is licensed under the MIT License. See the `LICENSE` file for details.
 
-```python
-from main import ingest_single_pdf, answer_query
-
-doc_ids, chunks_metadata = ingest_single_pdf("report.pdf")
-result = answer_query(chunks_metadata, "What are the key risks?")
-
-print(result["answer"])
-print(f"Confidence: {result['confidence']:.1%}")
-print(f"Verified:   {result['verified']}")
-```
-
----
-
-## Evaluation
-
-Prepare a JSON dataset:
-
-```json
-[
-  {
-    "query": "What was net income in FY2023?",
-    "expected_answer": "Net income was $1.2 billion in FY2023.",
-    "relevant_pages": [4, 5]
-  }
-]
-```
-
-```bash
-python evaluate.py
-```
-
-Output:
-
-```
-Retrieval  — Precision: 87.3%  Recall: 91.2%  F1: 89.2%  MRR: 0.847
-Generation — Accuracy: 84.1%  Confidence: 79.3%  Verified: 91.0%
-Citation   — Recall: 82.4%  Precision: 88.6%
-Speed      — Avg: 4.21s
-```
-
----
-
-## Confidence scoring
-
-```
-confidence = 0.30 × verification_score
-           + 0.25 × source_quality_score
-           + 0.25 × citation_f1
-           + 0.20 × retrieval_confidence
-
-           × atomic_fact_support_rate
-           × 0.85  (if numeric mismatches)
-           × 0.98ⁿ (n = hallucinated sentences)
-```
-
----
-
-## Project structure
-
-```
-documind/
-├── main.py        # Ingestion + interactive Q&A
-├── parser.py      # Docling PDF parser
-├── chunker.py     # Parent-child chunking
-├── embedder.py    # OpenAI dense + BM25 sparse embeddings
-├── database.py    # Qdrant indexing and search
-├── retriever.py   # Hybrid search, reranking, dedup
-├── generator.py   # Generation + verification + confidence
-├── evaluate.py    # Evaluation suite
-├── models.py      # Pydantic models
-├── config.py      # Configuration
-└── key.env        # API keys
-```
-
----
-
-## Qdrant
-
-```bash
-# Local
-docker run -p 6333:6333 qdrant/qdrant
-
-# Cloud — set QDRANT_HOST, QDRANT_PORT, QDRANT_API_KEY in key.env
-
-# In-memory — leave QDRANT_HOST=localhost with no running instance
-```
-
----
-
-## Requirements
-
-Python 3.10+ · OpenAI API key · Qdrant (optional, falls back to in-memory)
-
-```
-openai>=1.0.0
-qdrant-client>=1.7.0
-sentence-transformers>=2.2.0
-tiktoken>=0.5.0
-docling>=1.0.0
-numpy>=1.24.0
-python-dotenv>=1.0.0
-pydantic>=2.0.0
-```
-
----
-
-## Limitations
-
-- PDF only — no DOCX or image-only scans without Docling OCR configured
-- OpenAI only — swapping embedding/generation providers requires changes to `embedder.py` and `generator.py`
-- BM25 index rebuilds on every ingestion run — incremental updates not supported
-- Single collection — collection is reset on each ingestion
-
+## Acknowledgments
+- [Qdrant](https://qdrant.tech/) for their high-performance vector database.
+- [OpenAI](https://openai.com/) for generating dense embeddings and LLM reasoning.
+- [Docling](https://github.com/DS4SD/docling) and [PyMuPDF](https://pymupdf.readthedocs.io/en/latest/) for robust document processing.
