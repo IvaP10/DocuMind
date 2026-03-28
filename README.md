@@ -32,19 +32,76 @@ Standard Retrieval-Augmented Generation (RAG) pipelines break down when faced wi
 ## 🏗️ Architecture
 
 ```mermaid
-flowchart LR
-    PDF["📄 PDFs"] --> Parse["🔍 Multi-Backend Parser"]
-    Parse --> Chunk["🧩 Hierarchical Chunker"]
-    Chunk --> Embed["🧠 Dual Embedder<br/>(OpenAI + SPLADE)"]
-    Embed --> DB[("🗄️ Qdrant Vector DB")]
-    
-    Query["👤 User Query"] --> Search["⚙️ Hybrid Search + RRF"]
-    DB -.-> Search
-    Search --> Rerank["🎯 CrossEncoder Rerank"]
-    Rerank --> Gen["💬 Streaming LLM Gen"]
-    Gen --> Verify["🛡️ Async Verification"]
-    Verify --> Output["✅ Verified & Cited Answer"]
+flowchart TB
+    %% Ingestion Phase
+    subgraph Ingestion["Ingestion Phase (Offline)"]
+        direction TB
+        PDF["📄 PDF File"] --> Profiler{"🔍 Page Profiler"}
+        
+        Profiler -- "Low Text/Images" --> Docling["Docling (Scanned / OCR)"]
+        Profiler -- "Tables Detected" --> Plumber["pdfplumber (Tables)"]
+        Profiler -- "Standard Text" --> PyMuPDF["PyMuPDF (Digital Text)"]
+        
+        Docling --> Merge["🧩 Merge & Normalize Text"]
+        Plumber --> Merge
+        PyMuPDF --> Merge
+        
+        Merge --> Chunker["✂️ chunker.py<br/>(Parent / Child Chunks)"]
+        Chunker --> Embedder["🧠 embedder.py<br/>(Dense + Sparse Vectors)"]
+        Embedder --> DB[("🗄️ Qdrant Vector DB<br/>(database.py)")]
+    end
+
+    %% Query Phase
+    subgraph Query["Query Phase (Online)"]
+        direction TB
+        UserQuery["👤 User Query"] --> QueryEmbed["🧠 embedder.py<br/>(Dense + Sparse)"]
+    end
+
+    %% Retrieval Phase
+    subgraph Retrieval["Retrieval Process"]
+        direction TB
+        Search["🔍 database.py<br/>(Hybrid Search + RRF)"] --> Retrieve["🎯 retriever.py<br/>(Rerank + Filter + Dedup)"]
+        Retrieve --> Context["📝 Context Assembly<br/>(Child -> Parent text)"]
+    end
+
+    %% Generation Phase
+    subgraph Generation["Generation Process"]
+        direction TB
+        Gen["💬 generator.py<br/>(GPT-4o-mini stream)"] --> Verify["🛡️ 3 Async Verifiers<br/>(Facts - Numbers - Citations)"]
+        Verify --> Output["✅ Answer + Confidence Score"]
+    end
+
+    %% Cross-phase connections
+    DB -. "Stored Vectors" .-> Search
+    QueryEmbed --> Search
+    UserQuery -.-> Gen
+    Context -- "Assembled Context" --> Gen
 ```
+
+### 1. Ingestion Phase (Offline)
+DocuMind builds a comprehensive representation of your documents before any queries are asked:
+- **Intelligent Page Profiling:** As PDFs enter the system, a fast `Page Profiler` evaluates text density and layout to determine the optimal processing path.
+- **Multi-Modal Routing:** Pages are dynamically routed to: 
+  - **Docling:** For robust OCR on scanned images and low-text pages.
+  - **pdfplumber:** Specifically targets and extracted tabular structures into Markdown format.
+  - **PyMuPDF:** Efficiently parses standard digital text and metadata.
+- **Hierarchical Chunking & Embedding:** The merged texts are parsed by `chunker.py`, creating broad **Parent** chunks for context retention and granular **Child** chunks for high-precision retrieval. The `embedder.py` generates dual representations: traditional Dense embeddings via OpenAI, and learned Sparse expansions via a local SPLADE model. These are persisted to the **Qdrant Vector Database**.
+
+### 2. Query Phase (Online)
+When a user asks a question, the input passes through the identical dual-encoding process (`embedder.py`), transforming the plain text into Dense semantic vectors and Sparse exact-match term expansions.
+
+### 3. Retrieval Process
+- **Hybrid Search & Fusion:** The system queries the Qdrant DB with both vector types simultaneously. Results are mathematically merged using Reciprocal Rank Fusion (RRF) in `database.py`.
+- **Rerank & Filter:** Candidates enter `retriever.py` where a CrossEncoder AI model individually scores and reranks the relevance of every retrieved chunk, while deduplication mechanisms strip redundant data.
+- **Context Assembly:** The highly-ranked Child chunks retrieve their extensive Parent chunk's text, assembling a rich, surrounding context neighborhood for the LLM.
+
+### 4. Generation Process
+- **Assembled Context Generation:** `generator.py` streams the user query and the expanded context into an LLM (`gpt-4o-mini`).
+- **Async Verification:** While generating, three background workers aggressively audit the response:
+  - **Fact Check:** Dissects the output to ensure each atomic fact is supported by the context.
+  - **Number Match:** Verifies that all numeric outputs exactly mirror figures inside the original document.
+  - **Citation Check:** Confirms robust `[Source X | Page Y]` attribution formatting.
+- **Calibrated Output:** The final response arrives alongside a fused Confidence Score summarizing the outcome of all validation checks.
 
 *For an exhaustive breakdown of the pipeline, refer to the [DocuMind Architecture Documentation](documind_architecture.md).*
 

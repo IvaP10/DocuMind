@@ -12,6 +12,7 @@ from embedder import embedder
 from database import vector_db
 from retriever import retriever
 from generator import generator
+import asyncio
 
 logging.basicConfig(level=logging.WARNING)
 logger = logging.getLogger(__name__)
@@ -79,27 +80,45 @@ class RAGEvaluator:
     def evaluate_all(self, test_data: List[Dict], doc_id, chunks_metadata):
         from datasets import Dataset
         from ragas import evaluate
-        from ragas.metrics import context_precision, context_recall, faithfulness, answer_relevancy
-        
+        try:
+            from ragas.metrics import context_precision, context_recall, faithfulness, answer_relevancy
+            metrics = [context_precision, context_recall, faithfulness, answer_relevancy]
+        except ImportError:
+            # Ragas 0.2+ new API
+            from ragas.metrics import ContextPrecision, ContextRecall, Faithfulness, ResponseRelevancy
+            metrics = [ContextPrecision(), ContextRecall(), Faithfulness(), ResponseRelevancy()]
+            
         data = {"question": [], "answer": [], "contexts": [], "ground_truth": []}
         
+        async def _run_query(query):
+            context_data = await retriever.retrieve_context(document_id=doc_id, query=query, chunks_metadata=chunks_metadata)
+            
+            answer_generator = generator.generate_answer_stream(query=query, context_data=context_data)
+            full_answer = ""
+            async for chunk_str in answer_generator:
+                try:
+                    chunk = json.loads(chunk_str)
+                    if chunk.get("type") == "token":
+                        full_answer += chunk["content"]
+                except Exception:
+                    pass
+            return context_data, full_answer
+
         for i, tc in enumerate(test_data, 1):
             print(f"[{i}/{len(test_data)}] {tc['query'][:60]}...")
             query = tc.get("query", "")
             gt = tc.get("expected_answer", "")
             
-            context_data = retriever.retrieve_context(document_id=doc_id, query=query, chunks_metadata=chunks_metadata)
-            answer_data = generator.generate_answer(query=query, context_data=context_data)
+            context_data, answer_text = asyncio.run(_run_query(query))
             
             contexts = [c.get("text", "") for c in context_data.get("retrieved_chunks", [])]
             
             data["question"].append(query)
-            data["answer"].append(answer_data["answer"])
+            data["answer"].append(answer_text)
             data["contexts"].append(contexts)
             data["ground_truth"].append(gt)
             
         dataset = Dataset.from_dict(data)
-        metrics = [context_precision, context_recall, faithfulness, answer_relevancy]
         
         print("\nRunning RAGAS evaluation...")
         result = evaluate(dataset, metrics=metrics)
