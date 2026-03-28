@@ -1,125 +1,151 @@
-# DocuMind: A Hybrid Retrieval-Augmented Generation (RAG) Pipeline for Complex Document Intelligence
+<div align="center">
 
-[![Python](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
+# 🧠 DocuMind
+**A Production-Grade, Hybrid Retrieval-Augmented Generation (RAG) System**
+
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
-## Abstract
-Standard Retrieval-Augmented Generation (RAG) systems often struggle with long-form, structurally complex academic and financial documents, leading to hallucination, poor context retrieval, and loss of tabular data fidelity. **DocuMind** is an advanced, production-grade RAG pipeline designed to overcome these limitations. It introduces a multi-modal parsing strategy, semantic parent-child chunking, and a hybrid dense-sparse retrieval engine fortified by CrossEncoder reranking and numeric verification to guarantee highly calibrated, reliable, and verifiable AI-generated answers.
+*Precision answer generation across complex financial and academic documents, backed by structured citations and high-fidelity multi-modal extraction.*
 
----
-
-## Methodology & Architecture
-
-DocuMind is built upon a modular, five-stage architecture prioritizing accuracy and trace-ability over naive retrieval.
-
-### 1. Intelligent Multi-Modal Parsing (`pdf_parser.py`)
-Documents are heterogeneous; a single parsing strategy is insufficient. Our parser dynamically routes pages based on a heuristic density profile:
-- **PyMuPDF**: Extracts text layers and infers semantic roles (e.g., Headers, Lists, Paragraphs) via font metrics.
-- **pdfplumber**: Isolates tables, converts them into strict Markdown, and subtracts them from the text flow to prevent spatial distortion.
-- **Docling**: Acts as a fallback Optical Character Recognition (OCR) engine for scanned or image-dense pages.
-
-### 2. Semantic Contextual Chunking (`chunker.py`)
-Instead of fixed-size slicing, DocuMind employs a **Parent-Child Chunking Strategy**:
-- **Child Chunks**: Small, semantically cohesive units (e.g., individual sentences, table rows) optimized for high retrieval precision and token limit management.
-- **Parent Chunks**: Larger contextual windows that wrap the child chunks. During generation, the model is fed the parent context to ensure the semantic neighborhood is preserved, mitigating context fragmentation.
-
-### 3. Hybrid Retrieval Engine (`embedder.py`, `retriever.py`, `database.py`)
-Relying solely on dense embeddings fails on exact keyword matching (e.g., SKU numbers, specific acronyms). We use a dual-index approach via **Qdrant**:
-- **Dense Vectors**: Semantic search powered by OpenAI's `text-embedding-3-large`.
-- **Sparse Vectors (BM25)**: Lexical exact-match search generated natively over the corpus.
-- **Fusion**: Search results are merged using **Reciprocal Rank Fusion (RRF)**, ensuring the best of both retrieval methodologies.
-
-### 4. CrossEncoder Reranking
-Initial retrieval produces a broad set of candidates. A CrossEncoder model (`ms-marco-MiniLM-L-6-v2`) evaluates the query-document pair, re-scoring and filtering out low-relevance chunks before they reach the generation layer.
-
-### 5. Calibrated Generation (`generator.py`)
-The LLM (`gpt-4o-mini`) is constrained by strict meta-prompts:
-- **Numeric Verification**: Enforces exact continuous matching for statistics and financial figures.
-- **Attribution**: Requires rigorous in-line citations mapped back to the source document and page number.
-- **Confidence Scoring**: Outputs a calibrated confidence probability based on retrieval density and source verification, penalizing hallucination.
+</div>
 
 ---
 
-## Project Structure
+## 🚀 Overview
 
-```text
-.
-├── chunker.py           # Implements Semantic Parent-Child chunking
-├── config.py            # Global hyperparameters, thresholds, and weights
-├── database.py          # Qdrant Vector DB client and index management
-├── embedder.py          # Dense/Sparse vector generation and caching
-├── evaluate.py          # robust evaluation suite for QA benchmarking
-├── generator.py         # LLM abstraction with citation and verification logic
-├── main.py              # CLI entry point for ingestion and interactive querying
-├── models.py            # Pydantic data schemas representing the layout
-├── pdf_parser.py        # Multi-backend document parsing logic
-├── retriever.py         # Hybrid retrieval and RRF reranking logic
-└── requirements.txt     # Dependency graph
+Standard Retrieval-Augmented Generation (RAG) pipelines break down when faced with structurally dense PDFs, multi-page financial tables, and domain-specific acronyms. 
+
+**DocuMind** is purposely built to solve these challenges. It introduces a multi-backend parsing engine, semantic hierarchical chunking, and parallel dense-sparse (Hybrid) retrieval fused with Reciprocal Rank Fusion (RRF). Together with triple-layer background verification, it guarantees responses that are strictly grounded, mathematically verified, and meticulously cited.
+
+## ✨ Key Features
+
+- 📑 **Multi-Modal Parsing:** Dynamically routes document pages to the optimal extraction engine (**PyMuPDF** for digital, **pdfplumber** for tables, **Docling** for OCR).
+- 🧩 **Hierarchical Chunking:** Implements parent-child semantic chunking, naturally preserving token limits while preventing context fragmentation. Special handling for table rows and abbreviation-safe sentence splitting.
+- ⚡ **Hybrid Retrieval (Dual-Vector):** Parallel search queries over **Qdrant** using both Dense vectors (OpenAI `text-embedding-3-large`) and Sparse learned embeddings (local **SPLADE** model), fused via RRF.
+- 🎯 **High-Fidelity Reranking:** Leverages an external CrossEncoder microservice and custom numeric boosting (2x weight on exact number matches) to surface only the most contextually perfect chunks.
+- 🛡️ **Triple-Verified Generation:** Asynchronous streaming LLM (`gpt-4o-mini`) is immediately followed by background checks for: (1) Numeric accuracy, (2) Claim grounding & hallucination, (3) Citation formatting. 
+
+---
+
+## 🏗️ Architecture
+
+```mermaid
+flowchart LR
+    PDF["📄 PDFs"] --> Parse["🔍 Multi-Backend Parser"]
+    Parse --> Chunk["🧩 Hierarchical Chunker"]
+    Chunk --> Embed["🧠 Dual Embedder<br/>(OpenAI + SPLADE)"]
+    Embed --> DB[("🗄️ Qdrant Vector DB")]
+    
+    Query["👤 User Query"] --> Search["⚙️ Hybrid Search + RRF"]
+    DB -.-> Search
+    Search --> Rerank["🎯 CrossEncoder Rerank"]
+    Rerank --> Gen["💬 Streaming LLM Gen"]
+    Gen --> Verify["🛡️ Async Verification"]
+    Verify --> Output["✅ Verified & Cited Answer"]
 ```
 
----
-
-## Setup & Installation
-
-**Prerequisites:** Python 3.12+
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/your-username/DocuMind-RAG.git
-   cd DocuMind-RAG
-   ```
-
-2. **Create a Virtual Environment**
-   ```bash
-   python3.12 -m venv venv
-   source venv/bin/activate
-   ```
-
-3. **Install Dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-4. **Environment Variables**
-   Create a `key.env` file in the root directory. You will need API keys for OpenAI (and optionally Qdrant Cloud if not running locally):
-   ```env
-   OPENAI_API_KEY="sk-your-openai-key-here"
-   QDRANT_HOST="localhost"
-   QDRANT_PORT=6333
-   ```
+*For an exhaustive breakdown of the pipeline, refer to the [DocuMind Architecture Documentation](documind_architecture.md).*
 
 ---
 
-## Usage
+## 🛠️ Getting Started
 
-### Ingestion & Interactive Mode
-You can point the pipeline at a single PDF or an entire directory of PDFs. The system will build the BM25 index, generate dense embeddings, and start an interactive REPL shell.
+### Prerequisites
+- Python 3.12+
+- OpenAI API Key
+
+### 1. Installation
+
+Clone the repository and set up a virtual environment:
 
 ```bash
-python main.py path/to/your/financial_reports/
+git clone https://github.com/your-username/DocuMind.git
+cd DocuMind
+
+# Create and activate virtual environment
+python3.12 -m venv venv
+source venv/bin/activate  # On Windows use: venv\Scripts\activate
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-Inside the interactive shell:
-```text
-Query> What was the total revenue for FY2023?
-Query> stats
-Query> quit
+### 2. Configuration
+
+Create a `key.env` file in the project root to securely store your variables:
+
+```env
+OPENAI_API_KEY="sk-your-openai-api-key"
+# Optional: Setup Qdrant DB for cloud mode
+# QDRANT_URL="https://your-cluster-url.qdrant.tech"
+# QDRANT_API_KEY="your-qdrant-api-key"
 ```
 
-## Evaluation Metrics
+### 3. Usage
 
-The system is rigorously evaluated against ground-truth datasets (e.g., FinanceBench) using the industry-standard **RAGAS framework**. Run `evaluate.py` to calculate:
-- **Faithfulness**: Measures the factual consistency of the generated answer against the retrieved context. Penalizes hallucination.
-- **Answer Relevancy**: Computes the extent to which the generated answer directly addresses the initial user query.
-- **Context Precision**: Determines whether the most relevant chunks of context were highly ranked in the retrieval stage.
-- **Context Recall**: Measures whether all aspects of the ground truth were successfully retrieved in the contextual windows.
+DocuMind runs out-of-the-box in local mode. Start the ingestion and interactive REPL loop by passing a directory of PDFs or a single file:
+
+```bash
+python main.py /path/to/your/documents/
+```
+
+**Interactive REPL Commands:**
+- `Query>` Simply type your query and press enter (e.g. `What was the total revenue for FY2023?`).
+- `clear` - Clears the terminal screen.
+- `quit` or `exit` - Shuts down the system gracefully.
 
 ---
 
-## License
-This project is licensed under the MIT License. See the `LICENSE` file for details.
+## 📊 Evaluation & Benchmarking
 
-## Acknowledgments
-- [Qdrant](https://qdrant.tech/) for their high-performance vector database.
-- [OpenAI](https://openai.com/) for generating dense embeddings and LLM reasoning.
-- [Docling](https://github.com/DS4SD/docling) and [PyMuPDF](https://pymupdf.readthedocs.io/en/latest/) for robust document processing.
+The system is continuously tested against datasets like **FinanceBench** using the industry-standard **RAGAS** framework. 
+
+To run the benchmarking suite:
+```bash
+python evaluate.py
+```
+This produces a detailed CSV report judging the pipeline on four critical metrics:
+- **Context Precision:** Are the most relevant chunks ranked at the top?
+- **Context Recall:** Did the system retrieve all the context truly needed to answer?
+- **Faithfulness:** Is the generated answer hallucination-free?
+- **Answer Relevancy:** How well does the answer address the user's specific query?
+
+---
+
+## 📁 Repository Structure
+
+```text
+DocuMind/
+├── main.py              # Application entry point & REPL loop
+├── pdf_parser.py        # Intelligent routing to PyMuPDF, pdfplumber, Docling
+├── chunker.py           # Configurable parent-child semantic splitting
+├── embedder.py          # OpenAI Dense & SPLADE Sparse vectorization 
+├── database.py          # Dual-index chunk storage with Qdrant
+├── retriever.py         # Search, RRF, Rerank, & metadata filtering logic 
+├── generator.py         # LLM abstraction with citation constraints
+├── evaluate.py          # RAGAS evaluation harness
+├── config.py            # Global hyperparameter management
+└── models.py            # Pydantic data schemas 
+```
+
+---
+
+## 🤝 Contributing
+
+Contributions are welcome! If you have ideas for architectural improvements or feature requests:
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📄 License
+
+Distributed under the MIT License. See `LICENSE` for more information.
+
+---
+<div align="center">
+  <i>Built for high-stakes document intelligence.</i>
+</div>
