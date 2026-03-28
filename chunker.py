@@ -13,11 +13,16 @@ logger = logging.getLogger(__name__)
 class EnhancedContextualChunker:
 
     def __init__(self):
-        self.encoding = tiktoken.get_encoding("o200k_base")
+        self._encoding = None
         self.parent_size = config.CHUNK_SIZE_PARENT
         self.child_size = config.CHUNK_SIZE_CHILD
         self.overlap = config.CHUNK_OVERLAP
         self._compile_numeric_patterns()
+
+    def _ensure_encoding(self):
+        if self._encoding is None:
+            self.encoding = tiktoken.get_encoding("o200k_base")
+            self._encoding = self.encoding
 
     def _compile_numeric_patterns(self):
         self.numeric_patterns = [
@@ -254,6 +259,7 @@ class EnhancedContextualChunker:
         return [s.strip() for s in merged if s.strip()]
 
     def _count_tokens(self, text: str) -> int:
+        self._ensure_encoding()
         try:
             return len(self.encoding.encode(text))
         except Exception:

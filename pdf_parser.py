@@ -130,13 +130,13 @@ class PageProfiler:
         paths  = page.get_drawings()
         h_lines = sum(
             1 for p in paths
-            if p["type"] == "l"
+            if p["type"] in ("l", "re")
             and abs(p["rect"].height) < 2
             and p["rect"].width > 30
         )
         v_lines = sum(
             1 for p in paths
-            if p["type"] == "l"
+            if p["type"] in ("l", "re")
             and abs(p["rect"].width) < 2
             and p["rect"].height > 15
         )
@@ -334,26 +334,48 @@ class DoclingExtractor:
     def extract_pages(
         self, pdf_path: str, page_nos: List[int]
     ) -> List[LayoutElement]:
-        """
-        Run Docling on the full doc but filter to the requested pages.
-        Docling cannot easily extract individual pages, so we convert once
-        and discard the pages we don't need.
-        """
-        result = self._converter.convert(pdf_path)
-        doc    = result.document
+        if not page_nos:
+            return []
+            
+        import tempfile
+        import os
+        import fitz
+        
+        src_doc = fitz.open(pdf_path)
+        dst_doc = fitz.open()
+        
+        page_indices = [p - 1 for p in page_nos]
+        dst_doc.insert_pdf(src_doc, pages=page_indices)
+        
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+            tmp_path = tmp.name
+            
+        dst_doc.save(tmp_path)
+        dst_doc.close()
+        src_doc.close()
+        
         elems: List[LayoutElement] = []
-
-        for item, _ in doc.iterate_items():
-            try:
-                pno = item.prov[0].page_no if item.prov else None
-            except Exception:
-                pno = None
-            if pno not in page_nos:
-                continue
-            elem = _docling_item_to_element(item)
-            if elem:
-                elems.append(elem)
-
+        try:
+            result = self._converter.convert(tmp_path)
+            doc = result.document
+            
+            for item, _ in doc.iterate_items():
+                elem = _docling_item_to_element(item)
+                if elem:
+                    try:
+                        temp_pno = item.prov[0].page_no if item.prov else 1
+                        idx = temp_pno - 1
+                        if 0 <= idx < len(page_nos):
+                            elem.page = page_nos[idx]
+                        else:
+                            elem.page = page_nos[0]
+                    except Exception:
+                        elem.page = page_nos[0]
+                    elems.append(elem)
+        finally:
+            if os.path.exists(tmp_path):
+                os.remove(tmp_path)
+                
         return elems
 
 

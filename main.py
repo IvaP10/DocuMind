@@ -3,7 +3,11 @@ from uuid import uuid4, UUID
 import logging
 import sys
 import time
+import asyncio
+
 from typing import Dict, Any, List, Optional
+
+_import_start = time.time()
 
 from pdf_parser import parser
 from chunker import chunker
@@ -19,6 +23,7 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout), logging.FileHandler('rag_system.log')]
 )
 logger = logging.getLogger(__name__)
+logger.info(f"Modules loaded in {time.time() - _import_start:.2f}s")
 
 
 def process_document(pdf_path: str, doc_id: Optional[UUID] = None) -> tuple[UUID, List[Dict[str, Any]], List[str]]:
@@ -81,17 +86,12 @@ def ingest_folder(folder_path: str) -> tuple[List[UUID], List[Dict[str, Any]]]:
         all_corpus_texts.extend(texts)
         all_chunks_by_doc.append((doc_id, chunks, texts))
 
-    print(f"\nBuilding global BM25 index over {len(all_corpus_texts)} chunks...")
-    embedder.build_bm25_index(all_corpus_texts)
-    logger.info(f"Built BM25 index: corpus_size={embedder.corpus_size}, vocab_size={len(embedder.token_to_id)}")
-
     for doc_id, chunks, texts in all_chunks_by_doc:
-        print(f"  Embedding & indexing doc {doc_id}...")
-        dense_embeddings = embedder.embed_texts(texts, show_progress=True)
+        dense_embeddings = embedder.embed_texts(texts, show_progress=False)
         sparse_vectors = embedder.create_sparse_vectors_batch(texts)
         vector_db.index_chunks(chunks, dense_embeddings, sparse_vectors)
 
-    print(f"\nIngestion complete: {len(all_doc_ids)} documents, {len(all_chunks_metadata)} total chunks")
+    print(f"{len(all_chunks_metadata)} chunks created")
     return all_doc_ids, all_chunks_metadata
 
 
@@ -99,37 +99,27 @@ def ingest_single_pdf(pdf_path: str) -> tuple[List[UUID], List[Dict[str, Any]]]:
     vector_db.reset_collection()
     doc_id, chunks_metadata, texts, chunks = process_document(pdf_path)
 
-    print(f"Building BM25 index over {len(texts)} chunks...")
-    embedder.build_bm25_index(texts)
-    logger.info(f"Built BM25 index: corpus_size={embedder.corpus_size}, vocab_size={len(embedder.token_to_id)}")
-
-    print("Embedding & indexing...")
-    dense_embeddings = embedder.embed_texts(texts, show_progress=True)
+    dense_embeddings = embedder.embed_texts(texts, show_progress=False)
     sparse_vectors = embedder.create_sparse_vectors_batch(texts)
     vector_db.index_chunks(chunks, dense_embeddings, sparse_vectors)
 
-    print(f"\nIngestion complete: 1 document, {len(chunks_metadata)} chunks")
+    print(f"{len(chunks_metadata)} chunks created")
     return [doc_id], chunks_metadata
 
 
 def answer_query(chunks_metadata: List[Dict[str, Any]], query: str, document_id: Optional[UUID] = None) -> Dict[str, Any]:
     start_time = time.time()
-    context_data = retriever.retrieve_context(query=query, chunks_metadata=chunks_metadata, document_id=document_id)
+    context_data = asyncio.run(retriever.retrieve_context(query=query, chunks_metadata=chunks_metadata, document_id=document_id))
     answer_data = generator.generate_answer(query=query, context_data=context_data)
     answer_data["processing_time"] = time.time() - start_time
 
-    print(f"\n{'='*80}\nANSWER:\n{'='*80}")
-    print(answer_data['answer'])
-    print(f"\n{'='*80}")
-    print(f"Confidence: {answer_data['confidence']:.1%} | Verified: {answer_data['verified']} | Sources: {len(answer_data['sources'])}")
-    print(f"{'='*80}\n")
+    answer_text = answer_data['answer'].replace("[[", "[").replace("]]", "]")
+    print(f"answer: {answer_text}")
+    print(f"confidence: {answer_data['confidence']:.1%}\n")
     return answer_data
 
 
 def interactive_mode(doc_ids: List[UUID], chunks_metadata: List[Dict[str, Any]]):
-    print(f"\n{'='*80}\nINTERACTIVE MODE — {len(doc_ids)} document(s) loaded")
-    print("Commands: <query>  |  stats  |  quit\n")
-
     while True:
         try:
             user_input = input("Query> ").strip()
@@ -157,9 +147,6 @@ def interactive_mode(doc_ids: List[UUID], chunks_metadata: List[Dict[str, Any]])
 
 
 def main():
-    print(f"\n{'='*80}")
-    print(f"RAG SYSTEM | Model: {config.LLM_MODEL} | Embeddings: {config.EMBEDDING_MODEL}")
-    print(f"{'='*80}\n")
 
     input_path = sys.argv[1] if len(sys.argv) > 1 else input("Enter PDF file or folder path: ").strip()
     input_path = input_path.strip('"').strip("'")

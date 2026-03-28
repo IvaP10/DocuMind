@@ -1,14 +1,12 @@
 from typing import List, Dict, Optional, Set
 import numpy as np
-from collections import Counter
 import re
-import math
 import logging
+import math
 from pathlib import Path
-import pickle
 import hashlib
 import json
-from functools import lru_cache
+from collections import Counter
 
 try:
     import config
@@ -17,63 +15,64 @@ except ImportError:
         OPENAI_API_KEY = ""
         OPENAI_EMBEDDING_MODEL = "text-embedding-3-large"
         EMBEDDING_BATCH_SIZE = 2048
-        OPENAI_EMBEDDING_MAX_TOKENS_PER_REQUEST = 300000
         CACHE_DIR = Path("./cache")
         ENABLE_EMBEDDING_CACHE = True
     config = Config()
 
 logger = logging.getLogger(__name__)
 
+# ── Stopwords for sparse vector generation (no downloads needed) ──────────
+_STOPWORDS = frozenset({
+    'the','a','an','and','or','but','in','on','at','to','for','of','with',
+    'from','is','are','was','were','this','that','it','its','be','been',
+    'being','have','has','had','do','does','did','will','would','could',
+    'should','may','might','can','shall','not','no','nor','so','if','then',
+    'than','too','very','just','about','above','after','again','all','also',
+    'am','any','as','because','before','between','both','by','each','few',
+    'further','here','how','into','more','most','my','myself','only','other',
+    'our','out','over','own','same','she','he','her','him','his','some',
+    'such','there','their','them','they','these','those','through','under',
+    'until','up','us','we','what','when','where','which','while','who',
+    'whom','why','you','your','i','me','s','t','d','ll','re','ve','m',
+})
+
+
 class EnhancedEmbedder:
-    
+
     def __init__(self):
-        self._init_openai_embedder()
-        
-        self.k1 = 1.5
-        self.b = 0.75
-        
-        self.doc_freqs: Dict[str, int] = {}
-        self.doc_lengths: List[int] = []
-        self.avg_doc_length: float = 0.0
-        self.corpus_size: int = 0
-        
-        self.token_to_id: Dict[str, int] = {}
-        self.id_to_token: Dict[int, str] = {}
-        self.next_token_id: int = 0
-        
-        self._compile_tokenization_assets()
-        
+        self._openai_ready = False
+        self._tiktoken_ready = False
+        self._embed_single_cache = {}
+        self._encoding = None
+        self.openai_client = None
+        self.embedding_type = None
+        self.dimension = None
+
         self.cache_dir = config.CACHE_DIR / "embeddings"
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self.enable_cache = config.ENABLE_EMBEDDING_CACHE
-        
-        import tiktoken
-        self._encoding = tiktoken.get_encoding("cl100k_base")
 
-    def _compile_tokenization_assets(self):
-        self.re_percent = re.compile(r'(\d+)%')
-        self.re_dollar = re.compile(r'\$(\d+)')
-        self.re_units = [
-            (re.compile(r'(\d+)k\b', re.IGNORECASE), r'\1 thousand'),
-            (re.compile(r'(\d+)m\b', re.IGNORECASE), r'\1 million'),
-            (re.compile(r'(\d+)b\b', re.IGNORECASE), r'\1 billion'),
-        ]
-        self.re_clean = re.compile(r'[^\w\s\'-]')
-        self.re_whitespace = re.compile(r'\s+')
-        
-        self.stopwords: Set[str] = {
-            'the', 'a', 'an', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
-            'of', 'with', 'by', 'from', 'is', 'are', 'was', 'were', 'be', 'been',
-            'have', 'has', 'had', 'do', 'does', 'did', 'will', 'would', 'could',
-            'should', 'this', 'that', 'these', 'those', 'it', 'its', 'they', 'them'
-        }
-    
+        # IDF corpus stats for sparse vectors (built during indexing)
+        self._doc_count = 0
+        self._doc_freq: Counter = Counter()
+
+    def _ensure_tiktoken(self):
+        if not self._tiktoken_ready:
+            import tiktoken
+            self._encoding = tiktoken.get_encoding("cl100k_base")
+            self._tiktoken_ready = True
+
+    def _ensure_openai(self):
+        if not self._openai_ready:
+            self._init_openai_embedder()
+            self._openai_ready = True
+
     def _init_openai_embedder(self):
         try:
             from openai import OpenAI
             self.openai_client = OpenAI(api_key=config.OPENAI_API_KEY)
             self.embedding_type = "openai"
-            
+
             dimension_map = {
                 "text-embedding-3-small": 1536,
                 "text-embedding-3-large": 3072,
@@ -83,6 +82,8 @@ class EnhancedEmbedder:
         except Exception as e:
             logger.error(f"Failed to initialize OpenAI embeddings: {e}")
             raise
+
+    # ── Caching ───────────────────────────────────────────────────────────
 
     def _get_cache_key(self, texts: List[str]) -> str:
         content = json.dumps(texts, sort_keys=True)
@@ -102,39 +103,55 @@ class EnhancedEmbedder:
         cache_path = self.cache_dir / f"{cache_key}.npy"
         np.save(cache_path, embeddings)
 
+    # ── Dense embeddings (OpenAI API) ─────────────────────────────────────
+
     def embed_texts(
-        self, 
-        texts: List[str], 
+        self,
+        texts: List[str],
         batch_size: Optional[int] = None,
         show_progress: bool = False
     ) -> np.ndarray:
         if not texts:
             return np.array([])
-        
+
+        self._ensure_openai()
+        self._ensure_tiktoken()
+
         if batch_size is None:
             batch_size = config.EMBEDDING_BATCH_SIZE
-        
+
+        target_dim = getattr(config, 'EMBEDDING_DIMENSION', None)
+
+        def _ensure_dim(emb: np.ndarray) -> np.ndarray:
+            if target_dim and emb.shape[1] > target_dim:
+                emb = emb[:, :target_dim]
+                norms = np.linalg.norm(emb, axis=1, keepdims=True)
+                norms[norms == 0] = 1e-10
+                emb = emb / norms
+            return emb
+
         cache_key = self._get_cache_key(texts)
         cached = self._load_cached_embeddings(cache_key)
         if cached is not None:
-            return cached
-        
+            return _ensure_dim(cached)
+
         try:
             result = self._embed_with_openai(texts, batch_size)
+            result = _ensure_dim(result)
             self._save_cached_embeddings(cache_key, result)
             return result
         except Exception as e:
             logger.error(f"Embedding error: {str(e)}")
             raise
-    
+
     def _embed_with_openai(self, texts: List[str], batch_size: int) -> np.ndarray:
         max_tokens_per_input = 8191
         max_tokens_per_request = 250000
         max_items_per_request = 2048
-        
+
         if batch_size > max_items_per_request:
             batch_size = max_items_per_request
-            
+
         truncated_texts = []
         for text in texts:
             tokens = self._encoding.encode(text)
@@ -142,13 +159,13 @@ class EnhancedEmbedder:
                 tokens = tokens[:max_tokens_per_input]
                 text = self._encoding.decode(tokens)
             truncated_texts.append(text)
-            
+
         token_counts = [len(self._encoding.encode(t)) for t in truncated_texts]
-        
+
         batches = []
         current_batch = []
         current_tokens = 0
-        
+
         for i, (text, tc) in enumerate(zip(truncated_texts, token_counts)):
 
             if (current_tokens + tc > max_tokens_per_request) or (len(current_batch) >= batch_size):
@@ -156,20 +173,20 @@ class EnhancedEmbedder:
                     batches.append(current_batch)
                     current_batch = []
                     current_tokens = 0
-            
+
             current_batch.append(text)
             current_tokens += tc
-            
+
         if current_batch:
             batches.append(current_batch)
-            
+
         all_embeddings = []
         logger.info(f"Embedding {len(texts)} texts in {len(batches)} batches.")
-        
+
         for i, batch in enumerate(batches):
             batch_tokens = sum(len(self._encoding.encode(t)) for t in batch)
             logger.info(f"Batch {i+1}/{len(batches)}: {len(batch)} items, {batch_tokens} tokens")
-            
+
             try:
                 response = self.openai_client.embeddings.create(
                     model=config.OPENAI_EMBEDDING_MODEL,
@@ -180,134 +197,87 @@ class EnhancedEmbedder:
             except Exception as e:
                 logger.error(f"Error in batch {i+1}: {e}")
                 raise
-                
+
         embeddings = np.array(all_embeddings, dtype=np.float32)
         norms = np.linalg.norm(embeddings, axis=1, keepdims=True)
         norms[norms == 0] = 1e-10
         return embeddings / norms
 
-    @lru_cache(maxsize=1024)
     def embed_single(self, text: str) -> np.ndarray:
-        return self.embed_texts([text], show_progress=False)[0]
-    
+        if text in self._embed_single_cache:
+            return self._embed_single_cache[text].copy()
+
+        vector = self.embed_texts([text], show_progress=False)[0]
+
+        if len(self._embed_single_cache) >= 1024:
+            self._embed_single_cache.pop(next(iter(self._embed_single_cache)))
+
+        self._embed_single_cache[text] = vector.copy()
+        return vector.copy()
+
     def embed_query(self, query: str) -> np.ndarray:
         return self.embed_single(query)
 
-    def build_bm25_index(self, texts: List[str]):
-        self.doc_lengths = []
-        self.doc_freqs = {}
-        self.token_to_id = {}
-        self.id_to_token = {}
-        self.next_token_id = 0
-        self.corpus_size = len(texts)
-        
-        for text in texts:
-            tokens = self._tokenize(text)
-            self.doc_lengths.append(len(tokens))
-            
-            unique_tokens = set(tokens)
-            for token in unique_tokens:
-                self.doc_freqs[token] = self.doc_freqs.get(token, 0) + 1
-                if token not in self.token_to_id:
-                    self.token_to_id[token] = self.next_token_id
-                    self.id_to_token[self.next_token_id] = token
-                    self.next_token_id += 1
-        
-        self.avg_doc_length = sum(self.doc_lengths) / self.corpus_size if self.corpus_size > 0 else 0
+    # ── Sparse vectors (lightweight keyword-based, NO model download) ─────
+
+    @staticmethod
+    def _tokenize(text: str) -> List[str]:
+        """Fast regex tokenizer — lowercase alphanumeric tokens, skip stopwords."""
+        return [
+            w for w in re.findall(r'[a-z0-9]+(?:\.[0-9]+)?', text.lower())
+            if w not in _STOPWORDS and len(w) > 1
+        ]
+
+    @staticmethod
+    def _stable_hash(token: str) -> int:
+        """Map a token string to a stable integer ID in [0, 2^31).
+        Uses first 4 bytes of SHA-256 to avoid collisions across vocab."""
+        h = hashlib.sha256(token.encode('utf-8')).digest()
+        return int.from_bytes(h[:4], 'big') & 0x7FFFFFFF
 
     def create_sparse_vector(self, text: str, mode: str = "query") -> Dict[int, float]:
-        if self.corpus_size == 0:
-            return self._create_tfidf_vector(text)
-
+        """Create a sparse BM25-style vector from text.  Instant, no model needed."""
         tokens = self._tokenize(text)
-        token_counts = Counter(tokens)
-        sparse_vector = {}
-        
-        if mode == "document":
-            doc_len = len(tokens)
-            for token, tf in token_counts.items():
-                if token in self.token_to_id:
-                    token_id = self.token_to_id[token]
-                    
-                    numerator = tf * (self.k1 + 1)
-                    denominator = tf + self.k1 * (1 - self.b + self.b * (doc_len / self.avg_doc_length))
-                    tf_norm = numerator / denominator
-                    
-                    sparse_vector[token_id] = float(tf_norm)
-                    
-        else:
-            for token in tokens:
-                if token in self.token_to_id:
-                    token_id = self.token_to_id[token]
-                    
-                    df = self.doc_freqs.get(token, 0)
-                    idf = math.log((self.corpus_size - df + 0.5) / (df + 0.5) + 1.0)
-                    
-                    sparse_vector[token_id] = sparse_vector.get(token_id, 0.0) + float(idf)
+        if not tokens:
+            return {}
 
-        return sparse_vector
-    
-    def create_sparse_vectors_batch(self, texts: List[str], mode: str = "document") -> List[Dict[int, float]]:
-        return [self.create_sparse_vector(text, mode=mode) for text in texts]
-
-    def _create_tfidf_vector(self, text: str) -> Dict[int, float]:
-        tokens = self._tokenize(text)
-        counts = Counter(tokens)
+        tf = Counter(tokens)
         total = len(tokens)
-        vec = {}
-        for t, c in counts.items():
-            t_id = hash(t) % 100000 
-            vec[t_id] = (c / total) if total > 0 else 0.0
-        return vec
 
-    def _tokenize(self, text: str) -> List[str]:
-        text = text.lower()
-        
-        text = self.re_percent.sub(r'\1 percent', text)
-        text = self.re_dollar.sub(r'dollar \1', text)
-        for pattern, repl in self.re_units:
-            text = pattern.sub(repl, text)
-        
-        text = self.re_clean.sub(' ', text)
-        text = self.re_whitespace.sub(' ', text)
-        
-        raw_tokens = text.split()
-        filtered = []
-        
-        for t in raw_tokens:
-            if t in self.stopwords:
-                continue
-            if len(t) > 2 or (len(t) == 2 and any(c.isdigit() for c in t)):
-                filtered.append(t)
-                
-        return filtered
+        sparse: Dict[int, float] = {}
+        for term, count in tf.items():
+            # BM25-like TF saturation:  tf / (tf + 1.2)
+            tf_score = count / (count + 1.2)
 
-    def save_index(self, path: Path):
-        path = Path(path)
-        data = {
-            'vocab': self.token_to_id,
-            'doc_freqs': self.doc_freqs,
-            'stats': {
-                'avg_len': self.avg_doc_length,
-                'corpus_size': self.corpus_size
-            }
-        }
-        with open(path, 'wb') as f:
-            pickle.dump(data, f)
+            # IDF component (falls back to uniform if corpus stats aren't built)
+            if self._doc_count > 0:
+                df = self._doc_freq.get(term, 0)
+                idf = math.log(1 + (self._doc_count - df + 0.5) / (df + 0.5))
+            else:
+                idf = 1.0
 
-    def load_index(self, path: Path):
-        path = Path(path)
-        if not path.exists():
-            return
-            
-        with open(path, 'rb') as f:
-            data = pickle.load(f)
-            
-        self.token_to_id = data['vocab']
-        self.id_to_token = {v: k for k, v in self.token_to_id.items()}
-        self.doc_freqs = data['doc_freqs']
-        self.avg_doc_length = data['stats']['avg_len']
-        self.corpus_size = data['stats']['corpus_size']
-        self.next_token_id = len(self.token_to_id)
+            weight = tf_score * idf
+            if weight > 0.01:
+                sparse[self._stable_hash(term)] = round(weight, 4)
+
+        return sparse
+
+    def create_sparse_vectors_batch(self, texts: List[str], mode: str = "document") -> List[Dict[int, float]]:
+        """Batch sparse vector creation.  Also builds IDF corpus stats on-the-fly."""
+        # Build corpus-level document frequency for IDF
+        all_token_sets = []
+        for text in texts:
+            tokens = self._tokenize(text)
+            token_set = set(tokens)
+            all_token_sets.append(token_set)
+            for t in token_set:
+                self._doc_freq[t] += 1
+            self._doc_count += 1
+
+        # Now generate vectors using the updated IDF stats
+        results = []
+        for i, text in enumerate(texts):
+            results.append(self.create_sparse_vector(text, mode))
+        return results
 
 embedder = EnhancedEmbedder()

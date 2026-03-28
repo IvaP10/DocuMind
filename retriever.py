@@ -1,6 +1,5 @@
 from typing import List, Dict, Any, Optional, Tuple
 from uuid import UUID
-from sentence_transformers import CrossEncoder
 import config
 from database import vector_db
 from embedder import embedder
@@ -8,18 +7,16 @@ import logging
 import numpy as np
 import time
 import re
-from concurrent.futures import ThreadPoolExecutor
+import asyncio
+import httpx
 
 logger = logging.getLogger(__name__)
-
 
 class EnhancedRetriever:
 
     def __init__(self):
-        try:
-            self.reranker = CrossEncoder(config.RERANKER_MODEL, max_length=512)
-        except Exception:
-            self.reranker = CrossEncoder("cross-encoder/ms-marco-MiniLM-L-6-v2")
+        # Local CrossEncoder removed. Now relies on RERANKER_API_URL
+        pass
 
     def _extract_query_numbers(self, query: str) -> List[str]:
         patterns = [
@@ -44,13 +41,13 @@ class EnhancedRetriever:
             return 0.4, 0.6
         return config.DENSE_WEIGHT, config.SPARSE_WEIGHT
 
-    def retrieve_context(self, query: str, chunks_metadata: List[Dict[str, Any]], document_id: Optional[UUID] = None) -> Dict[str, Any]:
+    async def retrieve_context(self, query: str, chunks_metadata: List[Dict[str, Any]], document_id: Optional[UUID] = None) -> Dict[str, Any]:
         start_time = time.time()
         exp = config.MODE
 
         query_numbers = self._extract_query_numbers(query)
 
-        candidates = self._hybrid_search(query, document_id)
+        candidates = await self._hybrid_search(query, document_id)
 
         if not candidates:
             return self._empty_context()
@@ -58,7 +55,7 @@ class EnhancedRetriever:
         if query_numbers:
             candidates = self._boost_numeric_matches(candidates, query_numbers, chunks_metadata)
 
-        candidates, rerank_scores = self._rerank(query, candidates, exp["top_k_rerank"])
+        candidates, rerank_scores = await self._rerank(query, candidates, exp["top_k_rerank"])
 
         candidates, rerank_scores = self._adaptive_rerank_filter(candidates, rerank_scores)
 
@@ -68,20 +65,18 @@ class EnhancedRetriever:
         context_data["metrics"]["retrieval_time_ms"] = (time.time() - start_time) * 1000
         return context_data
 
-    def _hybrid_search(self, query: str, document_id: Optional[UUID] = None) -> List[Dict[str, Any]]:
+    async def _hybrid_search(self, query: str, document_id: Optional[UUID] = None) -> List[Dict[str, Any]]:
         dense_w, sparse_w = self._get_adaptive_weights(query)
 
-        with ThreadPoolExecutor(max_workers=2) as ex:
-            f_dense = ex.submit(embedder.embed_query, query)
-            f_sparse = ex.submit(embedder.create_sparse_vector, query, "query")
-            dense_emb = f_dense.result()
-            sparse_vec = f_sparse.result()
+        dense_emb, sparse_vec = await asyncio.gather(
+            asyncio.to_thread(embedder.embed_query, query),
+            asyncio.to_thread(embedder.create_sparse_vector, query, "query")
+        )
 
-        with ThreadPoolExecutor(max_workers=2) as ex:
-            f_ds = ex.submit(vector_db.dense_search, document_id, dense_emb, config.TOP_K_INITIAL)
-            f_ss = ex.submit(vector_db.sparse_search, document_id, sparse_vec, config.TOP_K_INITIAL)
-            dense_res = f_ds.result()
-            sparse_res = f_ss.result()
+        dense_res, sparse_res = await asyncio.gather(
+            asyncio.to_thread(vector_db.dense_search, document_id, dense_emb, config.TOP_K_INITIAL),
+            asyncio.to_thread(vector_db.sparse_search, document_id, sparse_vec, config.TOP_K_INITIAL)
+        )
 
         return self._fuse_results(dense_res, sparse_res, dense_w, sparse_w)
 
@@ -119,13 +114,34 @@ class EnhancedRetriever:
         candidates.sort(key=lambda x: x["score"], reverse=True)
         return candidates
 
-    def _rerank(self, query: str, candidates: List[Dict], top_k: int) -> Tuple[List[Dict], List[float]]:
+    async def _rerank(self, query: str, candidates: List[Dict], top_k: int) -> Tuple[List[Dict], List[float]]:
         if not candidates:
             return [], []
-        pairs = [[query, c["text"]] for c in candidates]
-        scores = self.reranker.predict(pairs, show_progress_bar=False)
+        
+        # External Reranker API Integration
+        api_url = getattr(config, "RERANKER_API_URL", "")
+        if not api_url:
+            # Fallback if no API is configured: just return candidates sorted by initial score
+            sorted_cands = sorted(candidates, key=lambda x: x.get("score", 0.0), reverse=True)[:top_k]
+            return sorted_cands, [c.get("score", 0.0) for c in sorted_cands]
+
+        pairs = [{"query": query, "text": c["text"]} for c in candidates]
+        
+        async with httpx.AsyncClient() as client:
+            try:
+                headers = {"Authorization": f"Bearer {config.RERANKER_API_KEY}"} if getattr(config, "RERANKER_API_KEY", "") else {}
+                payload = {"pairs": pairs} # Custom payload. Edit this if using Cohere vs custom microservice
+                response = await client.post(api_url, json=payload, headers=headers)
+                response.raise_for_status()
+                scores = response.json().get("scores", [])
+            except Exception as e:
+                logger.warning(f"Reranker API fallback triggered. Failed at {api_url}: {e}")
+                # Fallback to initial sparse/dense scores
+                scores = [c.get("score", 0.0) for c in candidates]
+                
         for c, s in zip(candidates, scores):
             c["rerank_score"] = float(s)
+            
         sorted_cands = sorted(candidates, key=lambda x: x["rerank_score"], reverse=True)[:top_k]
         return sorted_cands, [c["rerank_score"] for c in sorted_cands]
 
@@ -162,20 +178,20 @@ class EnhancedRetriever:
         return keep
 
     def _build_context(self, candidates: List[Dict], chunks_metadata: List[Dict], rerank_scores: List[float]) -> Dict[str, Any]:
-        meta_map = {c["id"]: c for c in chunks_metadata}
+        meta_map = {str(c["id"]): c for c in chunks_metadata}
         context_parts = []
         sources = []
         total_tokens = 0
         pw = config.PARENT_CONTEXT_WINDOW
 
         for candidate in candidates:
-            cid = candidate["chunk_id"]
+            cid = str(candidate["chunk_id"])
             meta = meta_map.get(cid)
             if not meta:
                 continue
             parent_id = meta.get("parent_id")
             if parent_id:
-                parent = meta_map.get(parent_id)
+                parent = meta_map.get(str(parent_id))
                 if parent:
                     pt = parent["text"]
                     ct = meta["text"]
@@ -220,6 +236,5 @@ class EnhancedRetriever:
             "retrieved_chunks": [], "rerank_scores": [],
             "metrics": {"total_candidates": 0, "final_chunks": 0, "avg_rerank_score": 0.0, "max_rerank_score": 0.0, "min_rerank_score": 0.0}
         }
-
 
 retriever = EnhancedRetriever()

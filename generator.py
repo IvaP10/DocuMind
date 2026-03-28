@@ -1,47 +1,55 @@
-from typing import Dict, Any, List
-from openai import OpenAI
+from typing import Dict, Any, List, AsyncGenerator
+from openai import AsyncOpenAI
 import config
 import logging
 import json
 import re
 import math
-from concurrent.futures import ThreadPoolExecutor
+import asyncio
 
 logger = logging.getLogger(__name__)
-
 
 class EnhancedGenerator:
 
     def __init__(self):
-        self.client = OpenAI(api_key=config.OPENAI_API_KEY)
+        self.client = AsyncOpenAI(api_key=config.OPENAI_API_KEY)
         self.model = config.LLM_MODEL
         self.temperature = config.LLM_TEMPERATURE
         self.max_tokens = config.LLM_MAX_TOKENS
 
-    def generate_answer(self, query: str, context_data: Dict[str, Any]) -> Dict[str, Any]:
+    async def generate_answer_stream(self, query: str, context_data: Dict[str, Any]) -> AsyncGenerator[str, None]:
         context = context_data.get("context", "")
         sources = context_data.get("sources", [])
         metrics = context_data.get("metrics", {})
 
         if not context:
-            return self._no_context_response()
+            yield json.dumps({"type": "error", "content": "No relevant context found to answer this question."})
+            return
 
         retrieval_confidence = self._calc_retrieval_confidence(sources, metrics)
-        answer = self._generate(query, context)
-        numeric_verification = self._verify_numeric_accuracy(answer, context)
+        
+        full_answer = ""
+        async for text_chunk in self._generate_stream(query, context):
+            full_answer += text_chunk
+            yield json.dumps({"type": "token", "content": text_chunk})
+        
+        # Background Verifications
+        numeric_task = asyncio.create_task(self._verify_numeric_accuracy_async(full_answer, context))
+        verification_task = asyncio.create_task(self._combined_verification_async(query, full_answer, context))
+        citation_task = asyncio.create_task(self._analyze_citations_async(full_answer, context))
 
-        with ThreadPoolExecutor(max_workers=1) as ex:
-            verify_future = ex.submit(self._combined_verification, query, answer, context)
-            citation_metrics = self._analyze_citations(answer, context)
-            combined_verification = verify_future.result()
+        numeric_verification = await numeric_task
+        combined_verification = await verification_task
+        citation_metrics = await citation_task
 
         verification = combined_verification.get("answer_verification", {"verified": True, "reason": "default"})
         atomic_verification = combined_verification.get("atomic_verification", {"support_rate": 1.0, "atomic_facts": [], "supported": []})
 
         confidence = self._calc_confidence(verification, atomic_verification, len(sources), citation_metrics, retrieval_confidence, numeric_verification)
 
-        return {
-            "answer": answer,
+        final_payload = {
+            "type": "verification",
+            "answer": full_answer,
             "sources": sources,
             "confidence": confidence,
             "verified": verification.get("verified", True) and numeric_verification["passed"],
@@ -52,7 +60,21 @@ class EnhancedGenerator:
             "numeric_verification": numeric_verification,
         }
 
-    def _generate(self, query: str, context: str) -> str:
+        yield json.dumps(final_payload)
+
+    def generate_answer(self, query: str, context_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Synchronous wrapper to consume the stream and return the final payload."""
+        async def _run():
+            final_payload = None
+            async for chunk in self.generate_answer_stream(query, context_data):
+                data = json.loads(chunk)
+                if data.get("type") == "verification" or data.get("type") == "error":
+                    final_payload = data
+            return final_payload
+            
+        return asyncio.run(_run())
+
+    async def _generate_stream(self, query: str, context: str) -> AsyncGenerator[str, None]:
         system = """You are a precise document analyst answering from a multi-document knowledge base. Answer questions using ONLY the provided context.
 
 RULES:
@@ -70,17 +92,22 @@ QUESTION: {query}
 
 Answer completely with [[Source: filename | Page: N]] citations for every fact."""
 
-        resp = self.client.chat.completions.create(
+        resp = await self.client.chat.completions.create(
             model=self.model,
             temperature=self.temperature,
             max_tokens=self.max_tokens,
-            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}]
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": user}],
+            stream=True
         )
-        return resp.choices[0].message.content.strip()
+        
+        async for chunk in resp:
+            content = chunk.choices[0].delta.content
+            if content:
+                yield content
 
-    def _combined_verification(self, query: str, answer: str, context: str) -> Dict[str, Any]:
+    async def _combined_verification_async(self, query: str, answer: str, context: str) -> Dict[str, Any]:
         try:
-            resp = self.client.chat.completions.create(
+            resp = await self.client.chat.completions.create(
                 model="gpt-4o-mini",
                 max_tokens=300,
                 temperature=0.0,
@@ -127,14 +154,16 @@ Return JSON:
         overlap = len(aw & cw) / len(aw)
         return {"verified": overlap > 0.7, "reason": f"Word overlap: {overlap:.2%}"}
 
-    def _verify_numeric_accuracy(self, answer: str, context: str) -> Dict[str, Any]:
-        clean_answer = re.sub(r'\[\[Source:.*?\]\]|\(Page\s+\d+\)|\[Page\s+\d+\]', '', answer, flags=re.IGNORECASE)
-        answer_nums = self._extract_numbers(clean_answer)
-        context_nums = self._extract_numbers(context)
-        if not answer_nums:
-            return {"passed": True, "mismatches": []}
-        mismatches = [n for n in answer_nums if n not in context_nums]
-        return {"passed": len(mismatches) == 0, "mismatches": mismatches}
+    async def _verify_numeric_accuracy_async(self, answer: str, context: str) -> Dict[str, Any]:
+        def _sync_verify():
+            clean_answer = re.sub(r'\[\[Source:.*?\]\]|\(Page\s+\d+\)|\[Page\s+\d+\]', '', answer, flags=re.IGNORECASE)
+            answer_nums = self._extract_numbers(clean_answer)
+            context_nums = self._extract_numbers(context)
+            if not answer_nums:
+                return {"passed": True, "mismatches": []}
+            mismatches = [n for n in answer_nums if n not in context_nums]
+            return {"passed": len(mismatches) == 0, "mismatches": mismatches}
+        return await asyncio.to_thread(_sync_verify)
 
     def _extract_numbers(self, text: str) -> List[str]:
         patterns = [
@@ -149,7 +178,7 @@ Return JSON:
             nums.extend(re.findall(p, text, re.IGNORECASE))
         return list(set(nums))
 
-    def _analyze_citations(self, answer: str, context: str) -> Dict[str, Any]:
+    async def _analyze_citations_async(self, answer: str, context: str) -> Dict[str, Any]:
         claims = [s for s in re.split(r'(?<=[.!?])\s+', answer) if s.strip() and self._is_factual(s)]
         if not claims:
             return {"citation_recall": 0.0, "citation_precision": 0.0, "citation_f1": 0.0, "total_claims": 0, "supported_claims": 0, "unsupported_claims": [], "hallucinated_sentences": []}
@@ -230,10 +259,5 @@ Return JSON:
             penalty = config.MODE.get("hallucination_penalty", 0.98)
             conf *= penalty ** len(hallucinated)
         return max(0.0, min(1.0, conf))
-
-    def _no_context_response(self) -> Dict[str, Any]:
-        empty_cit = {"citation_recall": 0.0, "citation_precision": 0.0, "citation_f1": 0.0, "total_claims": 0, "supported_claims": 0, "unsupported_claims": [], "hallucinated_sentences": []}
-        return {"answer": "No relevant context found to answer this question.", "sources": [], "confidence": 0.0, "verified": False, "citation_metrics": empty_cit, "verification_reason": "No context available", "atomic_verification": {"support_rate": 0.0, "atomic_facts": []}, "retrieval_confidence": 0.0, "numeric_verification": {"passed": True, "mismatches": []}}
-
 
 generator = EnhancedGenerator()

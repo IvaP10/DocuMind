@@ -47,7 +47,23 @@ class EnhancedVectorDatabase:
             collection_names = [c.name for c in collections]
             
             if self.collection_name not in collection_names:
-                self._create_collection()
+                try:
+                    self._create_collection()
+                except Exception as create_err:
+                    if "File exists" in str(create_err) or "already exists" in str(create_err).lower():
+                        logger.warning(
+                            f"Stale storage found for '{self.collection_name}'. "
+                            f"Cleaning up and recreating..."
+                        )
+                        try:
+                            self.client.delete_collection(self.collection_name)
+                            import time
+                            time.sleep(1.0)
+                        except Exception:
+                            pass
+                        self._create_collection()
+                    else:
+                        raise
                 
         except Exception as e:
             raise
@@ -55,6 +71,8 @@ class EnhancedVectorDatabase:
     def reset_collection(self):
         try:
             self.client.delete_collection(self.collection_name)
+            import time
+            time.sleep(1.0)
         except Exception:
             pass
         self._create_collection()
@@ -429,9 +447,27 @@ class EnhancedVectorDatabase:
 
 
 # Create the singleton instance with proper error handling
-try:
-    vector_db = EnhancedVectorDatabase()
-except RuntimeError as e:
-    logger.error(f"Failed to initialize vector database: {str(e)}")
-    logger.error("Please set up Qdrant before running the application.")
-    sys.exit(1)
+class _LazyVectorDB:
+    """Defers Qdrant connection until first attribute access."""
+    def __init__(self):
+        self._instance = None
+        self._init_error = None
+
+    def _ensure(self):
+        if self._instance is None and self._init_error is None:
+            try:
+                self._instance = EnhancedVectorDatabase()
+            except Exception as e:
+                self._init_error = e
+                logger.error(f"Failed to initialize vector database: {str(e)}")
+                logger.error("Please set up Qdrant before running the application.")
+
+    def __getattr__(self, name):
+        if name.startswith('_'):
+            raise AttributeError(name)
+        self._ensure()
+        if self._instance is None:
+            raise RuntimeError(f"Vector database not available: {self._init_error}")
+        return getattr(self._instance, name)
+
+vector_db = _LazyVectorDB()
