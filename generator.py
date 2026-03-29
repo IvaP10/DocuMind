@@ -80,7 +80,7 @@ class EnhancedGenerator:
 RULES:
 1. Give a complete, focused answer using the exact facts from the context. Cover all relevant aspects but avoid unnecessary filler.
 2. Use exact numbers, names, dates, formulas, and statistics as they appear.
-3. You MUST cite the specific Source File and Page Number for every fact used, using the format [[Source: filename | Page: N]].
+3. Do NOT place inline citations throughout your answer. Instead, at the very END of your answer, place a single consolidated citation line listing every source and page used, in this format: [[Source: filename | Page: 1,3,5]]. If multiple files were used, list each file separately.
 4. If documents conflict (e.g., File A says 'X' but File B says 'Y'), explicitly mention the conflict and attribute each claim to its source.
 5. Never add information not in the context.
 6. If the context lacks the answer, say: "The context does not contain this information.\""""
@@ -90,7 +90,7 @@ RULES:
 
 QUESTION: {query}
 
-Answer completely with [[Source: filename | Page: N]] citations for every fact."""
+Answer completely. At the end, add ONE consolidated citation: [[Source: filename | Page: 1,3,5]]."""
 
         resp = await self.client.chat.completions.create(
             model=self.model,
