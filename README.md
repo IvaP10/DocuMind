@@ -103,8 +103,6 @@ When a user asks a question, the input passes through the identical dual-encodin
   - **Citation Check:** Confirms robust `[Source X | Page Y]` attribution formatting.
 - **Calibrated Output:** The final response arrives alongside a fused Confidence Score summarizing the outcome of all validation checks.
 
-*For an exhaustive breakdown of the pipeline, refer to the [DocuMind Architecture Documentation](documind_architecture.md).*
-
 ---
 
 ## 🛠️ Getting Started
