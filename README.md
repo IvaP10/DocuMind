@@ -1,7 +1,7 @@
 <div align="center">
 
 # 🧠 DocuMind
-**A Production-Grade, Hybrid Retrieval-Augmented Generation (RAG) System**
+**Hybrid Retrieval-Augmented Generation (RAG) System**
 
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
