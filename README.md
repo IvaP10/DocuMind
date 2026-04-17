@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🧠 DocuMind
+# DocuMind
 **Hybrid Retrieval-Augmented Generation (RAG) System**
 
 [![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://python.org)
@@ -13,62 +13,62 @@
 
 ---
 
-## 🚀 Overview
+## Overview
 
 Standard Retrieval-Augmented Generation (RAG) pipelines break down when faced with structurally dense PDFs, multi-page financial tables, and domain-specific acronyms. 
 
 **DocuMind** is purposely built to solve these challenges. It introduces a multi-backend parsing engine, semantic hierarchical chunking, and parallel dense-sparse (Hybrid) retrieval fused with Reciprocal Rank Fusion (RRF). Together with triple-layer background verification, it guarantees responses that are strictly grounded, mathematically verified, and meticulously cited.
 
-## ✨ Key Features
+## Key Features
 
-- 📑 **Multi-Modal Parsing:** Dynamically routes document pages to the optimal extraction engine (**PyMuPDF** for digital, **pdfplumber** for tables, **Docling** for OCR).
-- 🧩 **Hierarchical Chunking:** Implements parent-child semantic chunking, naturally preserving token limits while preventing context fragmentation. Special handling for table rows and abbreviation-safe sentence splitting.
-- ⚡ **Hybrid Retrieval (Dual-Vector):** Parallel search queries over **Qdrant** using both Dense vectors (OpenAI `text-embedding-3-large`) and Sparse learned embeddings (local **SPLADE** model), fused via RRF.
-- 🎯 **High-Fidelity Reranking:** Leverages an external CrossEncoder microservice and custom numeric boosting (2x weight on exact number matches) to surface only the most contextually perfect chunks.
-- 🛡️ **Triple-Verified Generation:** Asynchronous streaming LLM (`gpt-4o-mini`) is immediately followed by background checks for: (1) Numeric accuracy, (2) Claim grounding & hallucination, (3) Citation formatting. 
+- **Multi-Modal Parsing:** Dynamically routes document pages to the optimal extraction engine (**PyMuPDF** for digital, **pdfplumber** for tables, **Docling** for OCR).
+- **Hierarchical Chunking:** Implements parent-child semantic chunking, naturally preserving token limits while preventing context fragmentation. Special handling for table rows and abbreviation-safe sentence splitting.
+- **Hybrid Retrieval (Dual-Vector):** Parallel search queries over **Qdrant** using both Dense vectors (OpenAI `text-embedding-3-large`) and Sparse learned embeddings (local **SPLADE** model), fused via RRF.
+- **High-Fidelity Reranking:** Leverages an external CrossEncoder microservice and custom numeric boosting (2x weight on exact number matches) to surface only the most contextually perfect chunks.
+- **Triple-Verified Generation:** Asynchronous streaming LLM (`gpt-4o-mini`) is immediately followed by background checks for: (1) Numeric accuracy, (2) Claim grounding & hallucination, (3) Citation formatting. 
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```mermaid
 flowchart TB
     %% Ingestion Phase
     subgraph Ingestion["Ingestion Phase (Offline)"]
         direction TB
-        PDF["📄 PDF File"] --> Profiler{"🔍 Page Profiler"}
+        PDF["PDF File"] --> Profiler{"Page Profiler"}
         
         Profiler -- "Low Text/Images" --> Docling["Docling (Scanned / OCR)"]
         Profiler -- "Tables Detected" --> Plumber["pdfplumber (Tables)"]
         Profiler -- "Standard Text" --> PyMuPDF["PyMuPDF (Digital Text)"]
         
-        Docling --> Merge["🧩 Merge & Normalize Text"]
+        Docling --> Merge["Merge & Normalize Text"]
         Plumber --> Merge
         PyMuPDF --> Merge
         
-        Merge --> Chunker["✂️ chunker.py<br/>(Parent / Child Chunks)"]
-        Chunker --> Embedder["🧠 embedder.py<br/>(Dense + Sparse Vectors)"]
-        Embedder --> DB[("🗄️ Qdrant Vector DB<br/>(database.py)")]
+        Merge --> Chunker["chunker.py<br/>(Parent / Child Chunks)"]
+        Chunker --> Embedder["embedder.py<br/>(Dense + Sparse Vectors)"]
+        Embedder --> DB[("Qdrant Vector DB<br/>(database.py)")]
     end
 
     %% Query Phase
     subgraph Query["Query Phase (Online)"]
         direction TB
-        UserQuery["👤 User Query"] --> QueryEmbed["🧠 embedder.py<br/>(Dense + Sparse)"]
+        UserQuery["User Query"] --> QueryEmbed["embedder.py<br/>(Dense + Sparse)"]
     end
 
     %% Retrieval Phase
     subgraph Retrieval["Retrieval Process"]
         direction TB
-        Search["🔍 database.py<br/>(Hybrid Search + RRF)"] --> Retrieve["🎯 retriever.py<br/>(Rerank + Filter + Dedup)"]
-        Retrieve --> Context["📝 Context Assembly<br/>(Child -> Parent text)"]
+        Search["database.py<br/>(Hybrid Search + RRF)"] --> Retrieve["retriever.py<br/>(Rerank + Filter + Dedup)"]
+        Retrieve --> Context["Context Assembly<br/>(Child -> Parent text)"]
     end
 
     %% Generation Phase
     subgraph Generation["Generation Process"]
         direction TB
-        Gen["💬 generator.py<br/>(GPT-4o-mini stream)"] --> Verify["🛡️ 3 Async Verifiers<br/>(Facts - Numbers - Citations)"]
-        Verify --> Output["✅ Answer + Confidence Score"]
+        Gen["generator.py<br/>(GPT-4o-mini stream)"] --> Verify["🛡️ 3 Async Verifiers<br/>(Facts - Numbers - Citations)"]
+        Verify --> Output["Answer + Confidence Score"]
     end
 
     %% Cross-phase connections
@@ -105,7 +105,7 @@ When a user asks a question, the input passes through the identical dual-encodin
 
 ---
 
-## 🛠️ Getting Started
+## Getting Started
 
 ### Prerequisites
 - Python 3.12+
@@ -153,7 +153,7 @@ python main.py /path/to/your/documents/
 
 ---
 
-## 📊 Evaluation & Benchmarking
+## Evaluation & Benchmarking
 
 The system is continuously tested against datasets like **FinanceBench** using the industry-standard **RAGAS** framework. 
 
@@ -187,7 +187,7 @@ DocuMind/
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! If you have ideas for architectural improvements or feature requests:
 1. Fork the Project
@@ -196,7 +196,7 @@ Contributions are welcome! If you have ideas for architectural improvements or f
 4. Push to the Branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
-## 📄 License
+## License
 
 Distributed under the MIT License. See `LICENSE` for more information.
 
