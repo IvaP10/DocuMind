@@ -67,7 +67,7 @@ flowchart TB
     %% Generation Phase
     subgraph Generation["Generation Process"]
         direction TB
-        Gen["generator.py<br/>(GPT-4o-mini stream)"] --> Verify["🛡️ 3 Async Verifiers<br/>(Facts - Numbers - Citations)"]
+        Gen["generator.py<br/>(GPT-4o-mini stream)"] --> Verify["3 Async Verifiers<br/>(Facts - Numbers - Citations)"]
         Verify --> Output["Answer + Confidence Score"]
     end
 
@@ -169,7 +169,7 @@ This produces a detailed CSV report judging the pipeline on four critical metric
 
 ---
 
-## 📁 Repository Structure
+## Repository Structure
 
 ```text
 DocuMind/
